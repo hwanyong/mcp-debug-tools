@@ -1,13 +1,13 @@
 import * as vscode from 'vscode'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import { z } from 'zod'
 import express from 'express'
 import { randomUUID } from 'node:crypto'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import { state } from './state'
 import { findAvailablePort } from './utils/port'
-import { addBreakpointToUri } from './commands'
+import { allTools } from './tools'
+import { allResources } from './resources'
 
 const MCP_SERVER_PORT = 8890
 
@@ -17,47 +17,20 @@ const MCP_SERVER_PORT = 8890
 export function initializeMcpServer(): McpServer {
     const mcpServer = new McpServer({ name: 'dap-proxy', version: '1.0.0' })
 
-    // Register DAP Log Resource
-    mcpServer.registerResource(
-        'dap-log',
-        'dap-log://current',
-        {
-            title: 'DAP Log',
-            description: 'Logs of Debug Adapter Protocol messages.',
-            mimeType: 'application/json'
-        },
-        async (uri) => {
-            return { contents: [{ uri: uri.href, text: JSON.stringify(state.dapMessages, null, 2) }] }
-        }
-    )
+    // 모든 도구 등록
+    for (const tool of allTools) {
+        mcpServer.registerTool(tool.name, tool.config, tool.handler)
+    }
 
-    // Register Add Breakpoint Tool
-    mcpServer.registerTool(
-        'add-breakpoint',
-        {
-            title: 'Add Breakpoint',
-            description: 'Adds a breakpoint to a specified file and line number using relative path from workspace root.',
-            inputSchema: {
-                filePath: z.string()
-                    .describe('Relative path to the file from workspace root (e.g., "src/main.js")'),
-                lineNumber: z.number()
-                    .int()
-                    .min(1)
-                    .describe('Line number to set the breakpoint on (1-based)')
-            }
-        },
-        async ({ filePath, lineNumber }: { filePath: string, lineNumber: number }) => {
-            try {
-                await addBreakpointToUri(filePath, lineNumber)
-                const successMessage = `Breakpoint added to ${filePath}:${lineNumber}`
-                return { content: [{ type: 'text', text: successMessage }] }
-            } catch (error: any) {
-                const errorMessage = `Error adding breakpoint: ${error.message}`
-                console.error(`❌ [MCP TOOL] ${errorMessage}`, error)
-                return { content: [{ type: 'text', text: errorMessage }], isError: true }
-            }
-        }
-    )
+    // 모든 리소스 등록
+    for (const resource of allResources) {
+        mcpServer.registerResource(
+            resource.name, 
+            resource.uri, 
+            resource.config, 
+            resource.handler
+        )
+    }
 
     return mcpServer
 }
