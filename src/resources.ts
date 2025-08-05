@@ -269,6 +269,109 @@ export const callStackResource = {
     }
 }
 
+// 변수/스코프 정보
+export const variablesScopeResource = {
+    name: 'variables-scope',
+    uri: 'debug://variables-scope',
+    config: {
+        title: 'Variables and Scopes',
+        description: 'All variables in current scope',
+        mimeType: 'application/json'
+    },
+    handler: async (uri: URL) => {
+        try {
+            const session = vscode.debug.activeDebugSession
+            if (!session) {
+                return {
+                    contents: [{
+                        uri: uri.href,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            const activeStackItem = vscode.debug.activeStackItem
+            if (!activeStackItem) {
+                return {
+                    contents: [{
+                        uri: uri.href,
+                        text: JSON.stringify({ message: 'No active stack frame' }, null, 2)
+                    }]
+                }
+            }
+            
+            // DAP scopes 요청으로 스코프 정보 가져오기
+            try {
+                const scopesResponse = await session.customRequest('scopes', {
+                    frameId: 'frameId' in activeStackItem ? (activeStackItem as any).frameId : undefined
+                })
+                
+                if (scopesResponse && scopesResponse.scopes) {
+                    const allScopes = []
+                    
+                    // 각 스코프에서 variables 요청
+                    for (const scope of scopesResponse.scopes) {
+                        const variablesResponse = await session.customRequest('variables', {
+                            variablesReference: scope.variablesReference
+                        })
+                        
+                        const scopeInfo = {
+                            name: scope.name,
+                            variablesReference: scope.variablesReference,
+                            expensive: scope.expensive,
+                            source: scope.source,
+                            line: scope.line,
+                            column: scope.column,
+                            endLine: scope.endLine,
+                            endColumn: scope.endColumn,
+                            variables: variablesResponse && variablesResponse.variables ? 
+                                variablesResponse.variables.map((v: any) => ({
+                                    name: v.name,
+                                    value: v.value,
+                                    type: v.type,
+                                    variablesReference: v.variablesReference,
+                                    presentationHint: v.presentationHint,
+                                    evaluateName: v.evaluateName
+                                })) : []
+                        }
+                        
+                        allScopes.push(scopeInfo)
+                    }
+                    
+                    const result = {
+                        frameId: 'frameId' in activeStackItem ? (activeStackItem as any).frameId : undefined,
+                        threadId: activeStackItem.threadId,
+                        scopes: allScopes
+                    }
+                    
+                    return {
+                        contents: [{
+                            uri: uri.href,
+                            text: JSON.stringify(result, null, 2)
+                        }]
+                    }
+                }
+            } catch (error) {
+                console.log('Variables and scopes request failed:', error)
+            }
+            
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify({ message: 'Failed to get variables and scopes' }, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify({ error: error.message }, null, 2)
+                }]
+            }
+        }
+    }
+}
+
 // 모든 리소스 export
 export const allResources = [
     dapLogResource,
@@ -276,5 +379,6 @@ export const allResources = [
     activeSessionResource,
     debugConsoleResource,
     activeStackItemResource,
-    callStackResource
+    callStackResource,
+    variablesScopeResource
 ]
