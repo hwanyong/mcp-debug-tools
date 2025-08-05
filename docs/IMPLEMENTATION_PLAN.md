@@ -3,11 +3,11 @@
 ## 📅 구현 일정
 
 ### Week 1: Phase 1 - 핵심 기능
-- [ ] 표현식 평가 Tool
-- [ ] 특정 변수 검사 Tool  
-- [ ] 콜스택 정보 Resource
-- [ ] 변수/스코프 정보 Resource
-- [ ] 스레드 목록 Resource
+- [x] 표현식 평가 Tool
+- [x] 특정 변수 검사 Tool  
+- [x] 콜스택 정보 Resource
+- [x] 변수/스코프 정보 Resource
+- [x] 스레드 목록 Resource
 
 ### Week 2: Phase 2 - 변수 모니터링
 - [ ] Watch 표현식 추가/제거 Tool
