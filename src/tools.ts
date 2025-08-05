@@ -9,18 +9,57 @@ export const addBreakpointTool = {
     name: 'add-breakpoint',
     config: {
         title: 'Add Breakpoint',
-        description: 'Add a breakpoint to a file at specified line',
+        description: 'Add a breakpoint to a file at specified line with optional conditions',
         inputSchema: inputSchemas['add-breakpoint']
     },
     handler: async (args: any) => {
-        const { file, line } = args as { file: string, line: number }
+        const { file, line, condition, hitCondition, logMessage } = args as { 
+            file: string, 
+            line: number, 
+            condition?: string, 
+            hitCondition?: string, 
+            logMessage?: string 
+        }
+        
         try {
             const uri = vscode.Uri.file(path.join(getWorkspaceRoot(), file))
             const location = new vscode.Location(uri, new vscode.Position(line - 1, 0))
+            
+            // 브레이크포인트 생성
             const breakpoint = new vscode.SourceBreakpoint(location)
             
+            // 조건부 설정 (옵셔널)
+            if (condition) {
+                (breakpoint as any).condition = condition
+            }
+            
+            if (hitCondition) {
+                (breakpoint as any).hitCondition = hitCondition
+            }
+            
+            if (logMessage) {
+                (breakpoint as any).logMessage = logMessage
+            }
+            
             vscode.debug.addBreakpoints([breakpoint])
-            return { content: [{ type: 'text' as const, text: `Breakpoint added at ${file}:${line}` }] }
+            
+            const result = {
+                file: file,
+                line: line,
+                condition: condition || null,
+                hitCondition: hitCondition || null,
+                logMessage: logMessage || null,
+                message: condition || hitCondition || logMessage ? 
+                    'Conditional breakpoint added successfully' : 
+                    'Breakpoint added successfully'
+            }
+            
+            return { 
+                content: [{ 
+                    type: 'text' as const, 
+                    text: JSON.stringify(result, null, 2) 
+                }] 
+            }
         } catch (error: any) {
             return { 
                 content: [{ type: 'text' as const, text: `Error: ${error.message}` }],

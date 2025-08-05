@@ -3,7 +3,10 @@ import { z } from 'zod'
 export const inputSchemas = {
     'add-breakpoint': {
         file: z.string().describe('Relative path from workspace root'),
-        line: z.number().int().min(1).describe('Line number (1-based)')
+        line: z.number().int().min(1).describe('Line number (1-based)'),
+        condition: z.string().optional().describe('Condition expression'),
+        hitCondition: z.string().optional().describe('Hit count condition'),
+        logMessage: z.string().optional().describe('Log message to output')
     },
     'remove-breakpoint': {
         file: z.string().describe('Relative path from workspace root'),

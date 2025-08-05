@@ -11,9 +11,9 @@
 
 ### Week 2: Phase 2 - 변수 모니터링
 - (CANCELED)[ ] Watch 표현식 추가/제거 Tool
-- [ ] Watch 목록 Resource
-- [ ] 변수 상세 정보 Resource
-- [ ] 조건부 브레이크포인트 Tool
+- (CANCELED)[ ] Watch 목록 Resource
+- (CANCELED)[ ] 변수 상세 정보 Resource
+- [x] 조건부 브레이크포인트 Tool
 
 ### Week 3: Phase 3 - 추가 기능
 - [ ] 예외 정보 Resource
@@ -135,23 +135,6 @@ export const threadListResource = {
 ```
 
 ### Phase 2 - 변수 모니터링 구현
-
-#### Watch 관련 기능
-```typescript
-// src/tools-parameters.ts에 추가
-export const inputSchemas = {
-    // ... 기존 스키마들
-    'add-watch': {
-        expression: z.string().describe('Expression to watch')
-    },
-    'remove-watch': {
-        expression: z.string().describe('Expression to remove from watch')
-    }
-}
-```
-- VSCode의 Watch 패널 API 활용
-- 표현식 추가/제거 명령 구현
-- Watch 목록 상태 추적
 
 #### 조건부 브레이크포인트
 ```typescript
