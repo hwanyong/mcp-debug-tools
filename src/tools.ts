@@ -394,6 +394,92 @@ export const evaluateExpressionTool = {
     }
 }
 
+// 특정 변수 검사
+export const inspectVariableTool = {
+    name: 'inspect-variable',
+    config: {
+        title: 'Inspect Variable',
+        description: 'Get detailed information about a variable',
+        inputSchema: inputSchemas['inspect-variable']
+    },
+    handler: async (args: any) => {
+        const { variableName } = args as { variableName: string }
+        
+        try {
+            // 디버그 세션 확인
+            const session = vscode.debug.activeDebugSession
+            if (!session) {
+                return { 
+                    content: [{ type: 'text' as const, text: 'No active debug session' }],
+                    isError: true 
+                }
+            }
+            
+            // 현재 활성 스택 프레임 확인
+            const activeStackItem = vscode.debug.activeStackItem
+            if (!activeStackItem) {
+                return { 
+                    content: [{ type: 'text' as const, text: 'No active stack frame' }],
+                    isError: true 
+                }
+            }
+            
+            // 먼저 scopes 요청으로 변수 스코프 확인
+            try {
+                const scopesResponse = await session.customRequest('scopes', {
+                    frameId: 'frameId' in activeStackItem ? (activeStackItem as any).frameId : undefined
+                })
+                
+                if (scopesResponse && scopesResponse.scopes) {
+                    // 각 스코프에서 variables 요청
+                    for (const scope of scopesResponse.scopes) {
+                        const variablesResponse = await session.customRequest('variables', {
+                            variablesReference: scope.variablesReference
+                        })
+                        
+                        if (variablesResponse && variablesResponse.variables) {
+                            // 변수명으로 검색
+                            const variable = variablesResponse.variables.find((v: any) => v.name === variableName)
+                            if (variable) {
+                                const result = {
+                                    name: variable.name,
+                                    value: variable.value,
+                                    type: variable.type,
+                                    variablesReference: variable.variablesReference,
+                                    scope: scope.name
+                                }
+                                
+                                return { 
+                                    content: [{ 
+                                        type: 'text' as const, 
+                                        text: `Variable: ${variableName}\nDetails: ${JSON.stringify(result, null, 2)}` 
+                                    }] 
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('Variable inspection failed:', error)
+            }
+            
+            // 변수를 찾지 못한 경우
+            return { 
+                content: [{ 
+                    type: 'text' as const, 
+                    text: `Variable "${variableName}" not found in current scope` 
+                }],
+                isError: true 
+            }
+        } catch (error: any) {
+            return { 
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true 
+            }
+        }
+    }
+}
+
 // 모든 도구 export
 export const allTools = [
     addBreakpointTool,
@@ -407,5 +493,6 @@ export const allTools = [
     stepOutTool,
     pauseTool,
     getDebugStateTool,
-    evaluateExpressionTool
+    evaluateExpressionTool,
+    inspectVariableTool
 ]

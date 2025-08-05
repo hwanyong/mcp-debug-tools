@@ -13,5 +13,8 @@ export const inputSchemas = {
     },
     'evaluate-expression': {
         expression: z.string().describe('Expression to evaluate in debug context')
+    },
+    'inspect-variable': {
+        variableName: z.string().describe('Name of the variable to inspect')
     }
 }
