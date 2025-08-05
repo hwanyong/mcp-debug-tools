@@ -179,11 +179,102 @@ export const activeStackItemResource = {
     }
 }
 
+// 콜스택 정보
+export const callStackResource = {
+    name: 'call-stack',
+    uri: 'debug://call-stack',
+    config: {
+        title: 'Call Stack',
+        description: 'Complete call stack information',
+        mimeType: 'application/json'
+    },
+    handler: async (uri: URL) => {
+        try {
+            const session = vscode.debug.activeDebugSession
+            if (!session) {
+                return {
+                    contents: [{
+                        uri: uri.href,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            const activeStackItem = vscode.debug.activeStackItem
+            if (!activeStackItem) {
+                return {
+                    contents: [{
+                        uri: uri.href,
+                        text: JSON.stringify({ message: 'No active stack frame' }, null, 2)
+                    }]
+                }
+            }
+            
+            // DAP stackTrace 요청으로 콜스택 정보 가져오기
+            try {
+                const response = await session.customRequest('stackTrace', {
+                    threadId: activeStackItem.threadId,
+                    startFrame: 0,
+                    levels: 100 // 충분한 수의 프레임 가져오기
+                })
+                
+                if (response && response.stackFrames) {
+                    const callStack = {
+                        threadId: activeStackItem.threadId,
+                        totalFrames: response.totalFrames,
+                        stackFrames: response.stackFrames.map((frame: any) => ({
+                            id: frame.id,
+                            name: frame.name,
+                            source: frame.source ? {
+                                name: frame.source.name,
+                                path: frame.source.path,
+                                sourceReference: frame.source.sourceReference
+                            } : null,
+                            line: frame.line,
+                            column: frame.column,
+                            endLine: frame.endLine,
+                            endColumn: frame.endColumn,
+                            canRestart: frame.canRestart,
+                            instructionPointerReference: frame.instructionPointerReference,
+                            moduleId: frame.moduleId,
+                            presentationHint: frame.presentationHint
+                        }))
+                    }
+                    
+                    return {
+                        contents: [{
+                            uri: uri.href,
+                            text: JSON.stringify(callStack, null, 2)
+                        }]
+                    }
+                }
+            } catch (error) {
+                console.log('Stack trace request failed:', error)
+            }
+            
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify({ message: 'Failed to get call stack' }, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify({ error: error.message }, null, 2)
+                }]
+            }
+        }
+    }
+}
+
 // 모든 리소스 export
 export const allResources = [
     dapLogResource,
     breakpointsResource,
     activeSessionResource,
     debugConsoleResource,
-    activeStackItemResource
+    activeStackItemResource,
+    callStackResource
 ]
