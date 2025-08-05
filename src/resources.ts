@@ -131,10 +131,59 @@ export const debugConsoleResource = {
     }
 }
 
+// 활성 스택 아이템 (스레드/스택 프레임)
+export const activeStackItemResource = {
+    name: 'active-stack-item',
+    uri: 'debug://active-stack-item',
+    config: {
+        title: 'Active Stack Item',
+        description: 'Currently focused thread or stack frame',
+        mimeType: 'application/json'
+    },
+    handler: async (uri: URL) => {
+        const activeStackItem = vscode.debug.activeStackItem
+        
+        if (!activeStackItem) {
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify({ message: 'No focused thread or stack frame' }, null, 2)
+                }]
+            }
+        }
+        
+        // VS Code Debug API의 activeStackItem은 내부 정보가 제한적이므로
+        // 기본 정보만 반환
+        const itemInfo: any = {
+            type: 'frameId' in activeStackItem ? 'stackFrame' : 'thread',
+            sessionId: activeStackItem.session.id,
+            sessionName: activeStackItem.session.name,
+            sessionType: activeStackItem.session.type
+        }
+        
+        // 스택 프레임인 경우
+        if ('frameId' in activeStackItem) {
+            itemInfo.frameId = (activeStackItem as any).frameId
+            itemInfo.threadId = activeStackItem.threadId
+        } else {
+            // 스레드인 경우
+            itemInfo.threadId = activeStackItem.threadId
+        }
+        
+        return {
+            contents: [{
+                uri: uri.href,
+                text: JSON.stringify(itemInfo, null, 2)
+            }]
+        }
+    }
+}
+
 // 모든 리소스 export
 export const allResources = [
     dapLogResource,
     breakpointsResource,
     activeSessionResource,
-    debugConsoleResource
+    debugConsoleResource,
+    activeStackItemResource
 ]
