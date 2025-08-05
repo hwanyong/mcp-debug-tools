@@ -437,6 +437,114 @@ export const threadListResource = {
     }
 }
 
+// 예외 정보
+export const exceptionInfoResource = {
+    name: 'exception-info',
+    uri: 'debug://exception-info',
+    config: {
+        title: 'Exception Information',
+        description: 'Exception details and stack trace',
+        mimeType: 'application/json'
+    },
+    handler: async (uri: URL) => {
+        try {
+            const session = vscode.debug.activeDebugSession
+            if (!session) {
+                return {
+                    contents: [{
+                        uri: uri.href,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            // DAP 메시지에서 예외 정보 추출
+            const { state } = await import('./state.js')
+            const exceptionInfo: any[] = []
+            
+            // 최근 DAP 메시지들을 역순으로 검색하여 예외 정보 찾기
+            for (let i = state.dapMessages.length - 1; i >= 0; i--) {
+                const msgStr = state.dapMessages[i]
+                
+                try {
+                    const jsonStart = msgStr.indexOf('{')
+                    if (jsonStart === -1) continue
+                    
+                    const jsonStr = msgStr.substring(jsonStart)
+                    const msg = JSON.parse(jsonStr)
+                    
+                    // stopped 이벤트에서 예외 정보 찾기
+                    if (msg.type === 'event' && msg.event === 'stopped' && msg.body) {
+                        const reason = msg.body.reason
+                        if (reason === 'exception') {
+                            const exceptionInfo = {
+                                reason: reason,
+                                threadId: msg.body.threadId,
+                                text: msg.body.text,
+                                description: msg.body.description,
+                                allThreadsStopped: msg.body.allThreadsStopped,
+                                timestamp: new Date().toISOString()
+                            }
+                            
+                            return {
+                                contents: [{
+                                    uri: uri.href,
+                                    text: JSON.stringify(exceptionInfo, null, 2)
+                                }]
+                            }
+                        }
+                    }
+                    
+                    // output 이벤트에서 예외 메시지 찾기
+                    if (msg.type === 'event' && msg.event === 'output' && msg.body?.output) {
+                        const output = msg.body.output
+                        if (output.includes('Error:') || output.includes('Exception:') || output.includes('TypeError:') || output.includes('ReferenceError:')) {
+                            exceptionInfo.push({
+                                type: 'output',
+                                message: output.trim(),
+                                timestamp: new Date().toISOString()
+                            })
+                        }
+                    }
+                } catch (e) {
+                    continue
+                }
+            }
+            
+            // 예외 정보가 없는 경우
+            if (exceptionInfo.length === 0) {
+                return {
+                    contents: [{
+                        uri: uri.href,
+                        text: JSON.stringify({ message: 'No exception information available' }, null, 2)
+                    }]
+                }
+            }
+            
+            const result = {
+                sessionId: session.id,
+                sessionName: session.name,
+                exceptions: exceptionInfo,
+                totalExceptions: exceptionInfo.length
+            }
+            
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify(result, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify({ error: error.message }, null, 2)
+                }]
+            }
+        }
+    }
+}
+
 // 모든 리소스 export
 export const allResources = [
     dapLogResource,
@@ -446,5 +554,6 @@ export const allResources = [
     activeStackItemResource,
     callStackResource,
     variablesScopeResource,
-    threadListResource
+    threadListResource,
+    exceptionInfoResource
 ]
