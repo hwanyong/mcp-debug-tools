@@ -60,8 +60,10 @@ function updatePanel(panel: vscode.WebviewPanel) {
 function getServerStatus() {
     return {
         isRunning: state.isServerRunning(),
+        host: 'localhost',
         port: state.currentPort,
-        startTime: state.serverStartTime?.toLocaleString('ko-KR'),
+        fullUrl: state.currentPort ? `http://localhost:${state.currentPort}` : null,
+        startTime: state.serverStartTime?.toLocaleString('en-US'),
         uptime: state.getUptime(),
         sessionCount: state.getTransportCount(),
         messageCount: state.dapMessages.length
@@ -73,7 +75,7 @@ function getServerStatus() {
  */
 function generateMcpConfig(): string {
     if (!state.currentPort) {
-        return 'MCP 서버가 아직 시작되지 않았습니다.'
+        return 'MCP server has not started yet.'
     }
     
     const config = {
@@ -98,7 +100,7 @@ function generateMcpConfig(): string {
 function copyMcpConfigToClipboard() {
     const config = generateMcpConfig()
     vscode.env.clipboard.writeText(config).then(() => {
-        vscode.window.showInformationMessage('MCP 설정이 클립보드에 복사되었습니다!')
+        vscode.window.showInformationMessage('MCP configuration has been copied to clipboard!')
     })
 }
 
@@ -184,36 +186,44 @@ function getWebviewContent(): string {
         </head>
         <body>
             <h1>🔍 DAP Proxy Monitor 
-                <button class="button refresh-btn" onclick="refresh()">🔄 새로고침</button>
+                <button class="button refresh-btn" onclick="refresh()">🔄 Refresh</button>
             </h1>
             
-            <h2>📊 MCP 서버 상태</h2>
+            <h2>📊 MCP Server Status</h2>
             <div>
                 <span class="status-indicator ${serverStatus.isRunning ? 'status-running' : 'status-stopped'}"></span>
-                <strong>${serverStatus.isRunning ? '🟢 실행 중' : '🔴 중지됨'}</strong>
+                <strong>${serverStatus.isRunning ? '🟢 Running' : '🔴 Stopped'}</strong>
             </div>
             
             <div class="info-grid">
-                <span class="info-label">포트:</span>
-                <span>${serverStatus.port || '알 수 없음'}</span>
+                <span class="info-label">Host:</span>
+                <span>${serverStatus.host}</span>
                 
-                <span class="info-label">시작 시간:</span>
-                <span>${serverStatus.startTime || '알 수 없음'}</span>
+                <span class="info-label">Port:</span>
+                <span>${serverStatus.port || 'Unknown'}</span>
                 
-                <span class="info-label">실행 시간:</span>
-                <span>${serverStatus.uptime || '알 수 없음'}</span>
+                <span class="info-label">Server URL:</span>
+                <span>${serverStatus.fullUrl || 'Not available'}</span>
                 
-                <span class="info-label">활성 세션:</span>
-                <span>${serverStatus.sessionCount}개</span>
+                <span class="info-label">Start Time:</span>
+                <span>${serverStatus.startTime || 'Unknown'}</span>
                 
-                <span class="info-label">DAP 메시지:</span>
-                <span>${serverStatus.messageCount}개</span>
+                <span class="info-label">Uptime:</span>
+                <span>${serverStatus.uptime || 'Unknown'}</span>
+                
+                <span class="info-label">Active Sessions:</span>
+                <span>${serverStatus.sessionCount}</span>
+                
+                <span class="info-label">DAP Messages:</span>
+                <span>${serverStatus.messageCount}</span>
             </div>
             
-            <h2>🔗 MCP 연결 설정</h2>
-            <p>현재 포트 기반으로 생성된 mcp.json 설정:</p>
+            <!--
+            <h2>🔗 MCP Connection Settings</h2>
+            <p>Generated mcp.json configuration based on current port:</p>
             <div class="code-block">${mcpConfig}</div>
-            <button class="button" onclick="copyMcpConfig()">📋 클립보드에 복사</button>
+            <button class="button" onclick="copyMcpConfig()">📋 Copy to Clipboard</button>
+            -->
             
             <script>
                 const vscode = acquireVsCodeApi();
