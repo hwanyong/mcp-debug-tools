@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { state } from './state'
 import { getRelativePath } from './utils/path'
+import { parseJsonWithComments } from './utils/json'
 
 // DAP 로그 (기존)
 export const dapLogResource = {
@@ -112,7 +113,7 @@ export const debugConsoleResource = {
                 if (jsonStart === -1) continue
                 
                 const jsonStr = msgStr.substring(jsonStart)
-                const msg = JSON.parse(jsonStr)
+                const msg = parseJsonWithComments(jsonStr)
                 
                 if (msg.type === 'event' && msg.event === 'output' && msg.body?.output) {
                     outputMessages.push(msg.body.output)
@@ -471,7 +472,7 @@ export const exceptionInfoResource = {
                     if (jsonStart === -1) continue
                     
                     const jsonStr = msgStr.substring(jsonStart)
-                    const msg = JSON.parse(jsonStr)
+                    const msg = parseJsonWithComments(jsonStr)
                     
                     // stopped 이벤트에서 예외 정보 찾기
                     if (msg.type === 'event' && msg.event === 'stopped' && msg.body) {

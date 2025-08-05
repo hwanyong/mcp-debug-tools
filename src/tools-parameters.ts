@@ -19,5 +19,11 @@ export const inputSchemas = {
     },
     'inspect-variable': {
         variableName: z.string().describe('Name of the variable to inspect')
+    },
+    'list-debug-configs': {
+        // 파라미터 없음
+    },
+    'select-debug-config': {
+        configName: z.string().describe('Debug configuration name to select')
     }
 }

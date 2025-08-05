@@ -3,6 +3,7 @@ import { z } from 'zod'
 import * as path from 'path'
 import { getWorkspaceRoot, getRelativePath } from './utils/path'
 import { inputSchemas } from './tools-parameters'
+import { parseJsonWithComments } from './utils/json'
 
 // 브레이크포인트 추가
 export const addBreakpointTool = {
@@ -519,6 +520,202 @@ export const inspectVariableTool = {
     }
 }
 
+// 디버그 구성 목록 조회
+export const listDebugConfigsTool = {
+    name: 'list-debug-configs',
+    config: {
+        title: 'List Debug Configurations',
+        description: 'List all available debug configurations from launch.json',
+        inputSchema: inputSchemas['list-debug-configs']
+    },
+    handler: async () => {
+        try {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+            if (!workspaceFolder) {
+                return { 
+                    content: [{ type: 'text' as const, text: 'No workspace folder open' }],
+                    isError: true 
+                }
+            }
+            
+            // launch.json 파일 읽기
+            const launchJsonUri = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'launch.json')
+            
+            try {
+                const launchJsonContent = await vscode.workspace.fs.readFile(launchJsonUri)
+                const contentString = launchJsonContent.toString()
+                
+                // 디버깅을 위한 내용 출력
+                console.log('Launch.json content length:', contentString.length)
+                console.log('Launch.json first 100 chars:', contentString.substring(0, 100))
+                
+                // JSON 파싱 시도 (주석 제거 후)
+                let launchJson
+                try {
+                    launchJson = parseJsonWithComments(contentString)
+                } catch (parseError: any) {
+                    return { 
+                        content: [{ 
+                            type: 'text' as const, 
+                            text: JSON.stringify({
+                                workspace: workspaceFolder.name,
+                                message: 'launch.json JSON parsing failed',
+                                error: parseError.message,
+                                contentLength: contentString.length,
+                                contentPreview: contentString.substring(0, 200),
+                                configurations: []
+                            }, null, 2) 
+                        }] 
+                    }
+                }
+                
+                if (launchJson.configurations && Array.isArray(launchJson.configurations)) {
+                    const configs = launchJson.configurations.map((config: any, index: number) => ({
+                        name: config.name || `Configuration ${index + 1}`,
+                        type: config.type || 'unknown',
+                        request: config.request || 'unknown',
+                        program: config.program || config.args?.[0] || 'not specified',
+                        cwd: config.cwd || 'not specified',
+                        env: config.env || {},
+                        args: config.args || []
+                    }))
+                    
+                    return { 
+                        content: [{ 
+                            type: 'text' as const, 
+                            text: JSON.stringify({
+                                workspace: workspaceFolder.name,
+                                configurations: configs,
+                                total: configs.length
+                            }, null, 2) 
+                        }] 
+                    }
+                } else {
+                    return { 
+                        content: [{ 
+                            type: 'text' as const, 
+                            text: JSON.stringify({
+                                workspace: workspaceFolder.name,
+                                message: 'No debug configurations found in launch.json',
+                                configurations: []
+                            }, null, 2) 
+                        }] 
+                    }
+                }
+            } catch (fileError: any) {
+                return { 
+                    content: [{ 
+                        type: 'text' as const, 
+                        text: JSON.stringify({
+                            workspace: workspaceFolder.name,
+                            message: 'launch.json not found or invalid',
+                            error: fileError.message,
+                            configurations: []
+                        }, null, 2) 
+                    }] 
+                }
+            }
+        } catch (error: any) {
+            return { 
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true 
+            }
+        }
+    }
+}
+
+// 디버그 구성 선택
+export const selectDebugConfigTool = {
+    name: 'select-debug-config',
+    config: {
+        title: 'Select Debug Configuration',
+        description: 'Select a debug configuration by name',
+        inputSchema: inputSchemas['select-debug-config']
+    },
+    handler: async (args: any) => {
+        const { configName } = args as { configName: string }
+        
+        try {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+            if (!workspaceFolder) {
+                return { 
+                    content: [{ type: 'text' as const, text: 'No workspace folder open' }],
+                    isError: true 
+                }
+            }
+            
+            // launch.json 파일 읽기
+            const launchJsonUri = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode', 'launch.json')
+            
+            try {
+                const launchJsonContent = await vscode.workspace.fs.readFile(launchJsonUri)
+                const launchJson = parseJsonWithComments(launchJsonContent.toString())
+                
+                if (launchJson.configurations && Array.isArray(launchJson.configurations)) {
+                    const selectedConfig = launchJson.configurations.find((config: any) => config.name === configName)
+                    
+                    if (selectedConfig) {
+                        return { 
+                            content: [{ 
+                                type: 'text' as const, 
+                                text: JSON.stringify({
+                                    message: `Debug configuration "${configName}" selected`,
+                                    configuration: {
+                                        name: selectedConfig.name,
+                                        type: selectedConfig.type || 'unknown',
+                                        request: selectedConfig.request || 'unknown',
+                                        program: selectedConfig.program || selectedConfig.args?.[0] || 'not specified',
+                                        cwd: selectedConfig.cwd || 'not specified',
+                                        env: selectedConfig.env || {},
+                                        args: selectedConfig.args || []
+                                    }
+                                }, null, 2) 
+                            }] 
+                        }
+                    } else {
+                        const availableConfigs = launchJson.configurations.map((config: any) => config.name)
+                        return { 
+                            content: [{ 
+                                type: 'text' as const, 
+                                text: JSON.stringify({
+                                    message: `Debug configuration "${configName}" not found`,
+                                    requestedConfig: configName,
+                                    availableConfigs: availableConfigs,
+                                    suggestion: availableConfigs.length > 0 ? 
+                                        `Available configurations: ${availableConfigs.join(', ')}` : 
+                                        'No debug configurations available'
+                                }, null, 2) 
+                            }],
+                            isError: true 
+                        }
+                    }
+                } else {
+                    return { 
+                        content: [{ 
+                            type: 'text' as const, 
+                            text: 'No debug configurations found in launch.json' 
+                        }],
+                        isError: true 
+                    }
+                }
+            } catch (fileError: any) {
+                return { 
+                    content: [{ 
+                        type: 'text' as const, 
+                        text: `Error reading launch.json: ${fileError.message}` 
+                    }],
+                    isError: true 
+                }
+            }
+        } catch (error: any) {
+            return { 
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true 
+            }
+        }
+    }
+}
+
 // 모든 도구 export
 export const allTools = [
     addBreakpointTool,
@@ -533,5 +730,7 @@ export const allTools = [
     pauseTool,
     getDebugStateTool,
     evaluateExpressionTool,
-    inspectVariableTool
+    inspectVariableTool,
+    listDebugConfigsTool,
+    selectDebugConfigTool
 ]
