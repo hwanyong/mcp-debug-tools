@@ -10,5 +10,8 @@ export const inputSchemas = {
     },
     'start-debug': {
         config: z.string().describe('Configuration name from launch.json')
+    },
+    'evaluate-expression': {
+        expression: z.string().describe('Expression to evaluate in debug context')
     }
 }

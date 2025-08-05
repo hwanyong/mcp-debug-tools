@@ -311,6 +311,89 @@ export const getDebugStateTool = {
     }
 }
 
+// 표현식 평가
+export const evaluateExpressionTool = {
+    name: 'evaluate-expression',
+    config: {
+        title: 'Evaluate Expression',
+        description: 'Evaluate expression in debug context',
+        inputSchema: inputSchemas['evaluate-expression']
+    },
+    handler: async (args: any) => {
+        const { expression } = args as { expression: string }
+        
+        try {
+            // 디버그 세션 확인
+            const session = vscode.debug.activeDebugSession
+            if (!session) {
+                return { 
+                    content: [{ type: 'text' as const, text: 'No active debug session' }],
+                    isError: true 
+                }
+            }
+            
+            // 현재 활성 스택 프레임 확인
+            const activeStackItem = vscode.debug.activeStackItem
+            if (!activeStackItem) {
+                return { 
+                    content: [{ type: 'text' as const, text: 'No active stack frame' }],
+                    isError: true 
+                }
+            }
+            
+            console.log('Debug session:', session.name, session.type)
+            console.log('Active stack item:', activeStackItem)
+            console.log('Expression to evaluate:', expression)
+            
+            // DebugSession의 customRequest를 사용하여 evaluate 요청
+            try {
+                const requestBody = {
+                    expression: expression,
+                    context: 'repl',
+                    frameId: 'frameId' in activeStackItem ? (activeStackItem as any).frameId : undefined
+                }
+                
+                console.log('Evaluate request body:', requestBody)
+                
+                const response = await session.customRequest('evaluate', requestBody)
+                
+                console.log('Evaluate response:', response)
+                
+                if (response && response.result !== undefined) {
+                    const result = typeof response.result === 'string' ? response.result : JSON.stringify(response.result)
+                    return { 
+                        content: [{ 
+                            type: 'text' as const, 
+                            text: `Expression: ${expression}\nResult: ${result}` 
+                        }] 
+                    }
+                } else {
+                    return { 
+                        content: [{ 
+                            type: 'text' as const, 
+                            text: `Expression: ${expression}\nResponse: ${JSON.stringify(response)}` 
+                        }] 
+                    }
+                }
+            } catch (evaluateError) {
+                console.log('Evaluate request failed:', evaluateError)
+                return { 
+                    content: [{ 
+                        type: 'text' as const, 
+                        text: `Evaluate error: ${evaluateError}` 
+                    }],
+                    isError: true 
+                }
+            }
+        } catch (error: any) {
+            return { 
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true 
+            }
+        }
+    }
+}
+
 // 모든 도구 export
 export const allTools = [
     addBreakpointTool,
@@ -323,5 +406,6 @@ export const allTools = [
     stepIntoTool,
     stepOutTool,
     pauseTool,
-    getDebugStateTool
+    getDebugStateTool,
+    evaluateExpressionTool
 ]
