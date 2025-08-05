@@ -10,7 +10,7 @@
 - [x] 스레드 목록 Resource
 
 ### Week 2: Phase 2 - 변수 모니터링
-- [ ] Watch 표현식 추가/제거 Tool
+- (CANCELED)[ ] Watch 표현식 추가/제거 Tool
 - [ ] Watch 목록 Resource
 - [ ] 변수 상세 정보 Resource
 - [ ] 조건부 브레이크포인트 Tool
