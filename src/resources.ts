@@ -372,6 +372,71 @@ export const variablesScopeResource = {
     }
 }
 
+// 스레드 목록
+export const threadListResource = {
+    name: 'thread-list',
+    uri: 'debug://thread-list',
+    config: {
+        title: 'Thread List',
+        description: 'All threads in debug session',
+        mimeType: 'application/json'
+    },
+    handler: async (uri: URL) => {
+        try {
+            const session = vscode.debug.activeDebugSession
+            if (!session) {
+                return {
+                    contents: [{
+                        uri: uri.href,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            // DAP threads 요청으로 스레드 목록 가져오기
+            try {
+                const response = await session.customRequest('threads')
+                
+                if (response && response.threads) {
+                    const threadList = {
+                        sessionId: session.id,
+                        sessionName: session.name,
+                        sessionType: session.type,
+                        threads: response.threads.map((thread: any) => ({
+                            id: thread.id,
+                            name: thread.name,
+                            presentationHint: thread.presentationHint
+                        }))
+                    }
+                    
+                    return {
+                        contents: [{
+                            uri: uri.href,
+                            text: JSON.stringify(threadList, null, 2)
+                        }]
+                    }
+                }
+            } catch (error) {
+                console.log('Threads request failed:', error)
+            }
+            
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify({ message: 'Failed to get thread list' }, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                contents: [{
+                    uri: uri.href,
+                    text: JSON.stringify({ error: error.message }, null, 2)
+                }]
+            }
+        }
+    }
+}
+
 // 모든 리소스 export
 export const allResources = [
     dapLogResource,
@@ -380,5 +445,6 @@ export const allResources = [
     debugConsoleResource,
     activeStackItemResource,
     callStackResource,
-    variablesScopeResource
+    variablesScopeResource,
+    threadListResource
 ]
