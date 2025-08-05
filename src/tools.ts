@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import { z } from 'zod'
 import * as path from 'path'
 import { getWorkspaceRoot, getRelativePath } from './utils/path'
+import { inputSchemas } from './tools-parameters'
 
 // 브레이크포인트 추가
 export const addBreakpointTool = {
@@ -9,10 +10,7 @@ export const addBreakpointTool = {
     config: {
         title: 'Add Breakpoint',
         description: 'Add a breakpoint to a file at specified line',
-        inputSchema: {
-            file: z.string().describe('Relative path from workspace root'),
-            line: z.number().int().min(1).describe('Line number (1-based)')
-        }
+        inputSchema: inputSchemas['add-breakpoint']
     },
     handler: async (args: any) => {
         const { file, line } = args as { file: string, line: number }
@@ -38,10 +36,7 @@ export const removeBreakpointTool = {
     config: {
         title: 'Remove Breakpoint',
         description: 'Remove breakpoint from a file at specified line',
-        inputSchema: {
-            file: z.string().describe('Relative path from workspace root'),
-            line: z.number().int().min(1).describe('Line number (1-based)')
-        }
+        inputSchema: inputSchemas['remove-breakpoint']
     },
     handler: async (args: any) => {
         const { file, line } = args as { file: string, line: number }
@@ -104,9 +99,7 @@ export const startDebugTool = {
     config: {
         title: 'Start Debug Session',
         description: 'Start a debug session with specified configuration',
-        inputSchema: {
-            config: z.string().describe('Configuration name from launch.json')
-        }
+        inputSchema: inputSchemas['start-debug']
     },
     handler: async (args: any) => {
         const { config } = args as { config: string }
