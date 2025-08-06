@@ -3,9 +3,15 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createMcpClient } from './mcp-client.js'
 
+// 로그 함수 - stdio 통신에 영향을 주지 않도록 별도 처리
+function logInfo(message: string) {
+    // stderr로 출력하되, stdio 통신과 분리
+    process.stderr.write(`[CLI] ${message}`)
+}
+
 async function main() {
-    console.error('🚀 DAP Proxy MCP 클라이언트 시작')
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    logInfo('🚀 DAP Proxy MCP 클라이언트 시작')
+    logInfo('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
     const args = process.argv.slice(2)
     let domain = 'http://localhost'
@@ -27,20 +33,22 @@ async function main() {
     }
 
     const serverUrl = `${domain}:${port}/mcp`
-    console.error(`🎯 서버 URL: ${serverUrl}`)
+    logInfo(`🎯 서버 URL: ${serverUrl}`)
 
     // HTTP 클라이언트로 확장에 연결 후 MCP 프록시 생성
+    logInfo('🔗 VSCode 확장에 HTTP 연결 시도...')
     const proxy = await createMcpClient(serverUrl)
+    logInfo('✅ VSCode 확장 HTTP 연결 성공')
 
     // stdio로 Cursor 등 MCP 클라이언트에 서버 제공
-    console.error('📡 stdio transport 시작...')
+    logInfo('📡 stdio transport 시작...')
 
     try {
         const transport = new StdioServerTransport()
         await proxy.connect(transport)
 
-        console.error('✅ MCP 클라이언트 준비 완료!')
-        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        logInfo('✅ MCP 클라이언트 준비 완료!')
+        logInfo('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     } catch (error) {
         console.error('❌ 오류 발생:', error)
         if (error instanceof Error) {

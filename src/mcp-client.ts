@@ -4,11 +4,20 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { inputSchemas } from './tools-parameters'
+
+// 로그 함수 - stdio 통신에 영향을 주지 않도록 별도 처리
+function logInfo(message: string) {
+    // stderr로 출력하되, stdio 통신과 분리
+    process.stderr.write(`[CLI] ${message}\n`)
+}
+
 /**
  * Create MCP proxy that connects to DAP Proxy extension via HTTP
  * and exposes tools/resources via stdio
  */
 export async function createMcpClient(serverUrl: string): Promise<McpServer> {
+    logInfo(`🔗 HTTP 클라이언트 생성: ${serverUrl}`)
+    
     // DAP Proxy 확장에 HTTP 클라이언트로 연결
     const client = new Client({
         name: 'dap-proxy-client',
@@ -19,8 +28,10 @@ export async function createMcpClient(serverUrl: string): Promise<McpServer> {
         }
     })
 
+    logInfo('📡 HTTP Transport 연결 시도...')
     const transport = new StreamableHTTPClientTransport(new URL(serverUrl))
     await client.connect(transport)
+    logInfo('✅ HTTP Transport 연결 성공')
 
     // Cursor 등에 제공할 MCP 서버 (프록시)
     const proxy = new McpServer({
@@ -29,9 +40,12 @@ export async function createMcpClient(serverUrl: string): Promise<McpServer> {
     })
 
     // 확장의 도구들을 프록시로 전달
+    logInfo('🔧 도구 목록 가져오는 중...')
     const { tools } = await client.listTools()
+    logInfo(`📋 발견된 도구: ${tools.length}개`)
 
     for (const tool of tools) {
+        logInfo(`  - 도구 등록: ${tool.name}`)
         proxy.registerTool(
             tool.name,
             {
@@ -42,21 +56,24 @@ export async function createMcpClient(serverUrl: string): Promise<McpServer> {
                 annotations: tool.annotations as any
             },
             async (args: any) => {
+                logInfo(`🛠️ 도구 호출: ${tool.name} - ${JSON.stringify(args)}`)
                 const result = await client.callTool({
                     name: tool.name,
                     arguments: args
                 })
-
+                logInfo(`✅ 도구 호출 완료: ${tool.name}`)
                 return result as any
             }
         )
     }
 
     // 확장의 리소스들을 프록시로 전달
+    logInfo('📚 리소스 목록 가져오는 중...')
     const { resources } = await client.listResources()
+    logInfo(`📋 발견된 리소스: ${resources.length}개`)
 
     for (const resource of resources) {
-        console.log(`  - ${resource.name}: ${resource.description}`)
+        logInfo(`  - 리소스 등록: ${resource.name}: ${resource.description}`)
         proxy.registerResource(
             resource.name,
             resource.uri,
@@ -66,10 +83,14 @@ export async function createMcpClient(serverUrl: string): Promise<McpServer> {
                 mimeType: resource.mimeType || 'application/json'
             },
             async (uri) => {
-                return await client.readResource({ uri: uri.href })
+                logInfo(`📖 리소스 읽기: ${resource.name}`)
+                const result = await client.readResource({ uri: uri.href })
+                logInfo(`✅ 리소스 읽기 완료: ${resource.name}`)
+                return result
             }
         )
     }
 
+    logInfo('🎯 MCP 프록시 서버 준비 완료')
     return proxy
 }
