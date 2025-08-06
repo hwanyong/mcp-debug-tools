@@ -14,13 +14,8 @@ export const addBreakpointTool = {
         inputSchema: inputSchemas['add-breakpoint']
     },
     handler: async (args: any) => {
-        const { file, line, condition, hitCondition, logMessage } = args as { 
-            file: string, 
-            line: number, 
-            condition?: string, 
-            hitCondition?: string, 
-            logMessage?: string 
-        }
+        const { file, line, condition, hitCondition, logMessage } = args
+        const tmpLogMessage = null
         
         try {
             const uri = vscode.Uri.file(path.join(getWorkspaceRoot(), file))
@@ -38,9 +33,9 @@ export const addBreakpointTool = {
                 (breakpoint as any).hitCondition = hitCondition
             }
             
-            if (logMessage) {
-                (breakpoint as any).logMessage = logMessage
-            }
+            // if (logMessage) {
+            //     (breakpoint as any).logMessage = logMessage
+            // }
             
             vscode.debug.addBreakpoints([breakpoint])
             
@@ -49,8 +44,8 @@ export const addBreakpointTool = {
                 line: line,
                 condition: condition || null,
                 hitCondition: hitCondition || null,
-                logMessage: logMessage || null,
-                message: condition || hitCondition || logMessage ? 
+                logMessage: tmpLogMessage || null,
+                message: condition || hitCondition || tmpLogMessage ? 
                     'Conditional breakpoint added successfully' : 
                     'Breakpoint added successfully'
             }
@@ -79,15 +74,7 @@ export const addBreakpointsTool = {
         inputSchema: inputSchemas['add-breakpoints']
     },
     handler: async (args: any) => {
-        const { breakpoints } = args as { 
-            breakpoints: Array<{
-                file: string
-                line: number
-                condition?: string
-                hitCondition?: string
-                logMessage?: string
-            }>
-        }
+        const { breakpoints } = args
         
         try {
             const createdBreakpoints: vscode.SourceBreakpoint[] = []
@@ -95,6 +82,7 @@ export const addBreakpointsTool = {
             
             for (const bp of breakpoints) {
                 const { file, line, condition, hitCondition, logMessage } = bp
+                const tmpLogMessage = null
                 
                 const uri = vscode.Uri.file(path.join(getWorkspaceRoot(), file))
                 const location = new vscode.Location(uri, new vscode.Position(line - 1, 0))
@@ -111,9 +99,9 @@ export const addBreakpointsTool = {
                     (breakpoint as any).hitCondition = hitCondition
                 }
                 
-                if (logMessage) {
-                    (breakpoint as any).logMessage = logMessage
-                }
+                // if (logMessage) {
+                //     (breakpoint as any).logMessage = logMessage
+                // }
                 
                 createdBreakpoints.push(breakpoint)
                 
@@ -122,7 +110,7 @@ export const addBreakpointsTool = {
                     line: line,
                     condition: condition || null,
                     hitCondition: hitCondition || null,
-                    logMessage: logMessage || null,
+                    logMessage: tmpLogMessage || null,
                     status: 'created'
                 })
             }
@@ -161,7 +149,7 @@ export const removeBreakpointTool = {
         inputSchema: inputSchemas['remove-breakpoint']
     },
     handler: async (args: any) => {
-        const { file, line } = args as { file: string, line: number }
+        const { file, line } = args
         try {
             const uri = vscode.Uri.file(path.join(getWorkspaceRoot(), file))
             const breakpoints = vscode.debug.breakpoints.filter(bp => 
@@ -270,7 +258,7 @@ export const startDebugTool = {
         inputSchema: inputSchemas['start-debug']
     },
     handler: async (args: any) => {
-        const { config } = args as { config: string }
+        const { config } = args
         try {
             const folder = vscode.workspace.workspaceFolders?.[0]
             if (!folder) {
@@ -488,7 +476,7 @@ export const evaluateExpressionTool = {
         inputSchema: inputSchemas['evaluate-expression']
     },
     handler: async (args: any) => {
-        const { expression } = args as { expression: string }
+        const { expression } = args
         
         try {
             // 디버그 세션 확인
@@ -571,7 +559,7 @@ export const inspectVariableTool = {
         inputSchema: inputSchemas['inspect-variable']
     },
     handler: async (args: any) => {
-        const { variableName } = args as { variableName: string }
+        const { variableName } = args
         
         try {
             // 디버그 세션 확인
@@ -761,7 +749,7 @@ export const selectDebugConfigTool = {
         inputSchema: inputSchemas['select-debug-config']
     },
     handler: async (args: any) => {
-        const { configName } = args as { configName: string }
+        const { configName } = args
         
         try {
             const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
