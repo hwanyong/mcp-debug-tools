@@ -70,6 +70,88 @@ export const addBreakpointTool = {
     }
 }
 
+// 다수 브레이크포인트 추가
+export const addBreakpointsTool = {
+    name: 'add-breakpoints',
+    config: {
+        title: 'Add Multiple Breakpoints',
+        description: 'Add multiple breakpoints to files with specified lines and optional conditions',
+        inputSchema: inputSchemas['add-breakpoints']
+    },
+    handler: async (args: any) => {
+        const { breakpoints } = args as { 
+            breakpoints: Array<{
+                file: string
+                line: number
+                condition?: string
+                hitCondition?: string
+                logMessage?: string
+            }>
+        }
+        
+        try {
+            const createdBreakpoints: vscode.SourceBreakpoint[] = []
+            const results: any[] = []
+            
+            for (const bp of breakpoints) {
+                const { file, line, condition, hitCondition, logMessage } = bp
+                
+                const uri = vscode.Uri.file(path.join(getWorkspaceRoot(), file))
+                const location = new vscode.Location(uri, new vscode.Position(line - 1, 0))
+                
+                // 브레이크포인트 생성
+                const breakpoint = new vscode.SourceBreakpoint(location)
+                
+                // 조건부 설정 (옵셔널)
+                if (condition) {
+                    (breakpoint as any).condition = condition
+                }
+                
+                if (hitCondition) {
+                    (breakpoint as any).hitCondition = hitCondition
+                }
+                
+                if (logMessage) {
+                    (breakpoint as any).logMessage = logMessage
+                }
+                
+                createdBreakpoints.push(breakpoint)
+                
+                results.push({
+                    file: file,
+                    line: line,
+                    condition: condition || null,
+                    hitCondition: hitCondition || null,
+                    logMessage: logMessage || null,
+                    status: 'created'
+                })
+            }
+            
+            // 모든 브레이크포인트를 한번에 추가
+            vscode.debug.addBreakpoints(createdBreakpoints)
+            
+            const summary = {
+                totalBreakpoints: breakpoints.length,
+                createdBreakpoints: createdBreakpoints.length,
+                results: results,
+                message: `Successfully added ${createdBreakpoints.length} breakpoint(s)`
+            }
+            
+            return { 
+                content: [{ 
+                    type: 'text' as const, 
+                    text: JSON.stringify(summary, null, 2) 
+                }] 
+            }
+        } catch (error: any) {
+            return { 
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true 
+            }
+        }
+    }
+}
+
 // 브레이크포인트 제거
 export const removeBreakpointTool = {
     name: 'remove-breakpoint',
@@ -765,6 +847,7 @@ export const selectDebugConfigTool = {
 // 모든 도구 export
 export const allTools = [
     addBreakpointTool,
+    addBreakpointsTool,
     removeBreakpointTool,
     clearBreakpointsTool,
     listBreakpointsTool,
