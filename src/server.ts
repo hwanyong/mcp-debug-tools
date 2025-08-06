@@ -55,11 +55,19 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: (id) => {
                     state.addTransport(id, transport)
+                    console.log(`Session initialized: ${id}`)
                 },
                 // For local development, disable DNS rebinding protection
                 enableDnsRebindingProtection: false,
             })
             transport.onclose = () => {
+                if (transport.sessionId) {
+                    state.removeTransport(transport.sessionId)
+                    console.log(`Session closed: ${transport.sessionId}`)
+                }
+            }
+            transport.onerror = (error) => {
+                console.error(`Transport error: ${error}`)
                 if (transport.sessionId) {
                     state.removeTransport(transport.sessionId)
                 }
@@ -73,7 +81,20 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
             })
             return
         }
-        await transport.handleRequest(req, res, req.body)
+        try {
+            await transport.handleRequest(req, res, req.body)
+        } catch (error) {
+            console.error(`Transport request error: ${error}`)
+            // 세션 에러 발생 시 세션 정리
+            if (sessionId) {
+                state.removeTransport(sessionId)
+            }
+            res.status(500).json({ 
+                jsonrpc: '2.0', 
+                error: { code: -32603, message: 'Internal error' }, 
+                id: null 
+            })
+        }
     })
 
     // Reusable handler for GET and DELETE requests
@@ -84,7 +105,14 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
             return
         }
         const transport = state.getTransport(sessionId)!
-        await transport.handleRequest(req, res)
+        try {
+            await transport.handleRequest(req, res)
+        } catch (error) {
+            console.error(`Session request error: ${error}`)
+            // 세션 에러 발생 시 세션 정리
+            state.removeTransport(sessionId)
+            res.status(500).send('Internal server error')
+        }
     }
 
     // Handle GET requests for server-to-client notifications via SSE

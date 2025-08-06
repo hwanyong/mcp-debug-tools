@@ -55,7 +55,10 @@ class ExtensionState {
     }
 
     removeTransport(sessionId: string) {
-        delete this._transports[sessionId]
+        if (this._transports[sessionId]) {
+            delete this._transports[sessionId]
+            console.log(`Transport removed: ${sessionId}`)
+        }
     }
 
     getTransport(sessionId: string): StreamableHTTPServerTransport | undefined {
@@ -120,7 +123,11 @@ class ExtensionState {
         this._mcpServer = undefined
         this._httpServer = undefined
         this._dapMessages = []
-        this._transports = {}
+        // 모든 세션 정리
+        for (const sessionId in this._transports) {
+            console.log(`Cleaning up session: ${sessionId}`)
+            delete this._transports[sessionId]
+        }
         this._currentPort = undefined
         this._serverStartTime = undefined
         this._activePanels = []
