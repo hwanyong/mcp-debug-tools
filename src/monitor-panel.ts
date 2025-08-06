@@ -182,12 +182,56 @@ function getWebviewContent(): string {
                     background-color: var(--vscode-button-secondaryBackground);
                     color: var(--vscode-button-secondaryForeground);
                 }
+                .beta-notice {
+                    background-color: var(--vscode-textBlockQuote-background);
+                    border-left: 4px solid #ff9800;
+                    padding: 15px;
+                    margin: 20px 0;
+                    border-radius: 4px;
+                }
+                .warning-box {
+                    background-color: var(--vscode-inputValidation-warningBackground);
+                    border: 1px solid var(--vscode-inputValidation-warningBorder);
+                    border-radius: 4px;
+                    padding: 15px;
+                    margin: 15px 0;
+                }
+                .info-box {
+                    background-color: var(--vscode-textBlockQuote-background);
+                    border: 1px solid var(--vscode-panel-border);
+                    border-radius: 4px;
+                    padding: 15px;
+                    margin: 15px 0;
+                }
+                .feature-list {
+                    margin: 10px 0;
+                    padding-left: 20px;
+                }
+                .feature-list li {
+                    margin: 8px 0;
+                }
+                .email-link {
+                    color: var(--vscode-textLink-foreground);
+                    text-decoration: none;
+                }
+                .email-link:hover {
+                    text-decoration: underline;
+                }
+                .section-divider {
+                    border-top: 1px solid var(--vscode-panel-border);
+                    margin: 30px 0;
+                }
             </style>
         </head>
         <body>
             <h1>🔍 DAP Proxy Monitor 
                 <button class="button refresh-btn" onclick="refresh()">🔄 Refresh</button>
             </h1>
+            
+            <div class="beta-notice">
+                <strong>⚠️ Beta Testing Notice</strong><br>
+                This program is currently in beta testing phase. Please report any issues or provide feedback.
+            </div>
             
             <h2>📊 MCP Server Status</h2>
             <div>
@@ -218,12 +262,43 @@ function getWebviewContent(): string {
                 <span>${serverStatus.messageCount}</span>
             </div>
             
-            <!--
-            <h2>🔗 MCP Connection Settings</h2>
-            <p>Generated mcp.json configuration based on current port:</p>
-            <div class="code-block">${mcpConfig}</div>
-            <button class="button" onclick="copyMcpConfig()">📋 Copy to Clipboard</button>
-            -->
+            <div class="warning-box">
+                <strong>⚠️ Current Limitations</strong><br>
+                • Only one debugging session per server is supported<br>
+                • For multiple simultaneous debugging sessions, you need to change the port in MCP configuration
+            </div>
+            
+            <h2>🔧 Multiple Debugging Sessions</h2>
+            <p>To run multiple debugging sessions simultaneously, modify your MCP configuration with different ports:</p>
+            <div class="code-block">{
+  "mcpServers": {
+    "dap-proxy": {
+      "command": "node",
+      "args": [
+        "/Users/uhd/Projects/mcp-dap-vscode/Package/mcp-debug-tools/out/cli.js",
+        "--port=8890"
+      ]
+    }
+  }
+}</div>
+            
+            <div class="section-divider"></div>
+            
+            <h2>📧 Feedback</h2>
+            <div class="info-box">
+                <p>We welcome your feedback and suggestions for improvement!</p>
+                <p><strong>Contact:</strong> <a href="mailto:yoo.hwanyong@gmail.com" class="email-link">yoo.hwanyong@gmail.com</a></p>
+            </div>
+            
+            <h2>🚀 Upcoming Features</h2>
+            <div class="info-box">
+                <p><strong>Features currently under development:</strong></p>
+                <ul class="feature-list">
+                    <li><strong>Multi-Session Support:</strong> Support for multiple debugging sessions on a single server - This will allow you to debug multiple applications simultaneously without needing separate MCP configurations.</li>
+                    <li><strong>Customizable Data Structures:</strong> Unified tool integration to reduce frequent tool calls - This feature will consolidate multiple tools into one, optimizing performance and reducing the overhead of multiple tool invocations.</li>
+                </ul>
+                <p><em>These features are expected to significantly improve the debugging experience and tool efficiency.</em></p>
+            </div>
             
             <script>
                 const vscode = acquireVsCodeApi();
