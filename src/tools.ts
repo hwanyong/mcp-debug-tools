@@ -102,6 +102,52 @@ export const removeBreakpointTool = {
     }
 }
 
+// 모든 브레이크포인트 제거
+export const clearBreakpointsTool = {
+    name: 'clear-breakpoints',
+    config: {
+        title: 'Clear Breakpoints',
+        description: 'Remove all breakpoints or breakpoints from a specific file',
+        inputSchema: inputSchemas['clear-breakpoints']
+    },
+    handler: async (args: any) => {
+        const { files } = args as { files?: string[] }
+        
+        try {
+            let breakpoints: vscode.Breakpoint[]
+            
+            if (files && files.length > 0) {
+                // 특정 파일들의 브레이크포인트만 제거
+                const uris = files.map(file => vscode.Uri.file(path.join(getWorkspaceRoot(), file)))
+                breakpoints = vscode.debug.breakpoints.filter(bp => 
+                    bp instanceof vscode.SourceBreakpoint &&
+                    uris.some(uri => bp.location.uri.fsPath === uri.fsPath)
+                )
+                
+                if (breakpoints.length > 0) {
+                    vscode.debug.removeBreakpoints(breakpoints)
+                    return { content: [{ type: 'text' as const, text: `Cleared ${breakpoints.length} breakpoint(s) from ${files.length} file(s): ${files.join(', ')}` }] }
+                }
+                return { content: [{ type: 'text' as const, text: `No breakpoints found in specified files: ${files.join(', ')}` }] }
+            } else {
+                // 모든 브레이크포인트 제거
+                breakpoints = vscode.debug.breakpoints.filter(bp => bp instanceof vscode.SourceBreakpoint)
+                
+                if (breakpoints.length > 0) {
+                    vscode.debug.removeBreakpoints(breakpoints)
+                    return { content: [{ type: 'text' as const, text: `Cleared ${breakpoints.length} breakpoint(s) from all files` }] }
+                }
+                return { content: [{ type: 'text' as const, text: 'No breakpoints to clear' }] }
+            }
+        } catch (error: any) {
+            return { 
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true 
+            }
+        }
+    }
+}
+
 // 모든 브레이크포인트 목록
 export const listBreakpointsTool = {
     name: 'list-breakpoints',
@@ -720,6 +766,7 @@ export const selectDebugConfigTool = {
 export const allTools = [
     addBreakpointTool,
     removeBreakpointTool,
+    clearBreakpointsTool,
     listBreakpointsTool,
     startDebugTool,
     stopDebugTool,
