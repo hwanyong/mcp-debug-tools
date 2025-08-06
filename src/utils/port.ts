@@ -1,9 +1,24 @@
 import * as net from 'net'
 
 /**
- * Check if a port is available
+ * Check if a port is available using Node.js built-in method
+ * Falls back to server binding method for older Node.js versions
  */
-export function isPortAvailable(port: number): Promise<boolean> {
+export async function isPortAvailable(port: number): Promise<boolean> {
+    // Use Node.js built-in method if available (Node.js 18.13.0+)
+    if ('isPortAvailable' in net && typeof (net as any).isPortAvailable === 'function') {
+        return await (net as any).isPortAvailable(port)
+    }
+    
+    // Fallback to server binding method for older Node.js versions
+    return isPortAvailableLegacy(port)
+}
+
+/**
+ * Legacy method: Check if a port is available by attempting to bind to it
+ * Used as fallback for older Node.js versions
+ */
+function isPortAvailableLegacy(port: number): Promise<boolean> {
     return new Promise((resolve) => {
         const server = net.createServer()
         
@@ -17,7 +32,7 @@ export function isPortAvailable(port: number): Promise<boolean> {
             })
         })
         
-        server.listen(port, '127.0.0.1')
+        server.listen(port)
     })
 }
 
