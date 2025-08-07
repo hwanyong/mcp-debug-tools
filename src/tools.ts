@@ -4,6 +4,7 @@ import * as path from 'path'
 import { getWorkspaceRoot, getRelativePath } from './utils/path'
 import { inputSchemas } from './tools-parameters'
 import { parseJsonWithComments } from './utils/json'
+import { state } from './state'
 
 // 브레이크포인트 추가
 export const addBreakpointTool = {
@@ -832,6 +833,575 @@ export const selectDebugConfigTool = {
     }
 }
 
+// 새로운 도구들 추가
+
+// 1. DAP 로그 도구
+export const getDapLogTool = {
+    name: 'get-dap-log',
+    config: {
+        title: 'Get DAP Log',
+        description: 'Retrieve all DAP protocol messages',
+        inputSchema: inputSchemas['get-dap-log']
+    },
+    handler: async (args: any) => {
+        try {
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify(state.dapMessages, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 2. 브레이크포인트 목록 도구
+export const getBreakpointsTool = {
+    name: 'get-breakpoints',
+    config: {
+        title: 'Get Breakpoints',
+        description: 'Retrieve all current breakpoints',
+        inputSchema: inputSchemas['get-breakpoints']
+    },
+    handler: async (args: any) => {
+        try {
+            const breakpoints = vscode.debug.breakpoints
+                .filter(bp => bp instanceof vscode.SourceBreakpoint)
+                .map(bp => {
+                    const sbp = bp as vscode.SourceBreakpoint
+                    return {
+                        file: getRelativePath(sbp.location.uri.fsPath),
+                        line: sbp.location.range.start.line + 1,
+                        enabled: sbp.enabled,
+                        condition: sbp.condition,
+                        hitCondition: sbp.hitCondition,
+                        logMessage: sbp.logMessage
+                    }
+                })
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify(breakpoints, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 3. 활성 세션 도구
+export const getActiveSessionTool = {
+    name: 'get-active-session',
+    config: {
+        title: 'Get Active Session',
+        description: 'Retrieve information about the currently active debug session',
+        inputSchema: inputSchemas['get-active-session']
+    },
+    handler: async (args: any) => {
+        try {
+            const session = vscode.debug.activeDebugSession
+            
+            if (!session) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            const sessionInfo = {
+                id: session.id,
+                name: session.name,
+                type: session.type,
+                workspaceFolder: session.workspaceFolder?.name,
+                configuration: session.configuration
+            }
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify(sessionInfo, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 4. 디버그 콘솔 도구
+export const getDebugConsoleTool = {
+    name: 'get-debug-console',
+    config: {
+        title: 'Get Debug Console',
+        description: 'Retrieve recent debug console output',
+        inputSchema: inputSchemas['get-debug-console']
+    },
+    handler: async (args: any) => {
+        try {
+            const { limit, filter } = args
+            const outputMessages: string[] = []
+            
+            for (const msgStr of state.dapMessages) {
+                try {
+                    const jsonStart = msgStr.indexOf('{')
+                    if (jsonStart === -1) continue
+                    
+                    const jsonStr = msgStr.substring(jsonStart)
+                    const msg = parseJsonWithComments(jsonStr)
+                    
+                    if (msg.type === 'event' && msg.event === 'output' && msg.body?.output) {
+                        const output = msg.body.output
+                        if (!filter || output.includes(filter)) {
+                            outputMessages.push(output)
+                        }
+                    }
+                } catch (e) {
+                    // JSON 파싱 실패 시 무시
+                }
+            }
+            
+            // limit 적용
+            const limitedMessages = limit ? outputMessages.slice(-limit) : outputMessages
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: limitedMessages.length > 0 ? limitedMessages.join('\n') : 'No debug console output available'
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 5. 활성 스택 아이템 도구
+export const getActiveStackItemTool = {
+    name: 'get-active-stack-item',
+    config: {
+        title: 'Get Active Stack Item',
+        description: 'Retrieve currently focused thread or stack frame',
+        inputSchema: inputSchemas['get-active-stack-item']
+    },
+    handler: async (args: any) => {
+        try {
+            const activeStackItem = vscode.debug.activeStackItem
+            
+            if (!activeStackItem) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No focused thread or stack frame' }, null, 2)
+                    }]
+                }
+            }
+            
+            const itemInfo: any = {
+                type: 'frameId' in activeStackItem ? 'stackFrame' : 'thread',
+                sessionId: activeStackItem.session.id,
+                sessionName: activeStackItem.session.name,
+                sessionType: activeStackItem.session.type
+            }
+            
+            if ('frameId' in activeStackItem) {
+                itemInfo.frameId = (activeStackItem as any).frameId
+                itemInfo.threadId = activeStackItem.threadId
+            } else {
+                itemInfo.threadId = activeStackItem.threadId
+            }
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify(itemInfo, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 6. 콜스택 도구
+export const getCallStackTool = {
+    name: 'get-call-stack',
+    config: {
+        title: 'Get Call Stack',
+        description: 'Retrieve complete call stack information',
+        inputSchema: inputSchemas['get-call-stack']
+    },
+    handler: async (args: any) => {
+        try {
+            const { threadId, startFrame = 0, levels = 100 } = args
+            const session = vscode.debug.activeDebugSession
+            
+            if (!session) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            const activeStackItem = vscode.debug.activeStackItem
+            if (!activeStackItem) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No active stack frame' }, null, 2)
+                    }]
+                }
+            }
+            
+            const targetThreadId = threadId || activeStackItem.threadId
+            
+            try {
+                const response = await session.customRequest('stackTrace', {
+                    threadId: targetThreadId,
+                    startFrame: startFrame,
+                    levels: levels
+                })
+                
+                if (response && response.stackFrames) {
+                    const callStack = {
+                        threadId: targetThreadId,
+                        totalFrames: response.totalFrames,
+                        stackFrames: response.stackFrames.map((frame: any) => ({
+                            id: frame.id,
+                            name: frame.name,
+                            source: frame.source ? {
+                                name: frame.source.name,
+                                path: frame.source.path,
+                                sourceReference: frame.source.sourceReference
+                            } : null,
+                            line: frame.line,
+                            column: frame.column,
+                            endLine: frame.endLine,
+                            endColumn: frame.endColumn,
+                            canRestart: frame.canRestart,
+                            instructionPointerReference: frame.instructionPointerReference,
+                            moduleId: frame.moduleId,
+                            presentationHint: frame.presentationHint
+                        }))
+                    }
+                    
+                    return {
+                        content: [{
+                            type: 'text' as const,
+                            text: JSON.stringify(callStack, null, 2)
+                        }]
+                    }
+                }
+            } catch (error) {
+                console.log('Stack trace request failed:', error)
+            }
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify({ message: 'Failed to get call stack' }, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 7. 변수/스코프 도구
+export const getVariablesScopeTool = {
+    name: 'get-variables-scope',
+    config: {
+        title: 'Get Variables and Scopes',
+        description: 'Retrieve all variables in current scope',
+        inputSchema: inputSchemas['get-variables-scope']
+    },
+    handler: async (args: any) => {
+        try {
+            const { frameId, scopeName } = args
+            const session = vscode.debug.activeDebugSession
+            
+            if (!session) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            const activeStackItem = vscode.debug.activeStackItem
+            if (!activeStackItem) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No active stack frame' }, null, 2)
+                    }]
+                }
+            }
+            
+            const targetFrameId = frameId || ('frameId' in activeStackItem ? (activeStackItem as any).frameId : undefined)
+            
+            try {
+                const scopesResponse = await session.customRequest('scopes', {
+                    frameId: targetFrameId
+                })
+                
+                if (scopesResponse && scopesResponse.scopes) {
+                    const allScopes = []
+                    
+                    for (const scope of scopesResponse.scopes) {
+                        if (scopeName && scope.name !== scopeName) continue
+                        
+                        const variablesResponse = await session.customRequest('variables', {
+                            variablesReference: scope.variablesReference
+                        })
+                        
+                        const scopeInfo = {
+                            name: scope.name,
+                            variablesReference: scope.variablesReference,
+                            expensive: scope.expensive,
+                            source: scope.source,
+                            line: scope.line,
+                            column: scope.column,
+                            endLine: scope.endLine,
+                            endColumn: scope.endColumn,
+                            variables: variablesResponse && variablesResponse.variables ? 
+                                variablesResponse.variables.map((v: any) => ({
+                                    name: v.name,
+                                    value: v.value,
+                                    type: v.type,
+                                    variablesReference: v.variablesReference,
+                                    presentationHint: v.presentationHint,
+                                    evaluateName: v.evaluateName
+                                })) : []
+                        }
+                        
+                        allScopes.push(scopeInfo)
+                    }
+                    
+                    const result = {
+                        frameId: targetFrameId,
+                        threadId: activeStackItem.threadId,
+                        scopes: allScopes
+                    }
+                    
+                    return {
+                        content: [{
+                            type: 'text' as const,
+                            text: JSON.stringify(result, null, 2)
+                        }]
+                    }
+                }
+            } catch (error) {
+                console.log('Variables and scopes request failed:', error)
+            }
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify({ message: 'Failed to get variables and scopes' }, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 8. 스레드 목록 도구
+export const getThreadListTool = {
+    name: 'get-thread-list',
+    config: {
+        title: 'Get Thread List',
+        description: 'Retrieve all threads in debug session',
+        inputSchema: inputSchemas['get-thread-list']
+    },
+    handler: async (args: any) => {
+        try {
+            const session = vscode.debug.activeDebugSession
+            
+            if (!session) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            try {
+                const response = await session.customRequest('threads')
+                
+                if (response && response.threads) {
+                    const threadList = {
+                        sessionId: session.id,
+                        sessionName: session.name,
+                        sessionType: session.type,
+                        threads: response.threads.map((thread: any) => ({
+                            id: thread.id,
+                            name: thread.name,
+                            presentationHint: thread.presentationHint
+                        }))
+                    }
+                    
+                    return {
+                        content: [{
+                            type: 'text' as const,
+                            text: JSON.stringify(threadList, null, 2)
+                        }]
+                    }
+                }
+            } catch (error) {
+                console.log('Threads request failed:', error)
+            }
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify({ message: 'Failed to get thread list' }, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 9. 예외 정보 도구
+export const getExceptionInfoTool = {
+    name: 'get-exception-info',
+    config: {
+        title: 'Get Exception Information',
+        description: 'Retrieve exception details and stack trace',
+        inputSchema: inputSchemas['get-exception-info']
+    },
+    handler: async (args: any) => {
+        try {
+            const { limit, includeStackTrace } = args
+            const session = vscode.debug.activeDebugSession
+            
+            if (!session) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No active debug session' }, null, 2)
+                    }]
+                }
+            }
+            
+            const exceptionInfo: any[] = []
+            
+            for (let i = state.dapMessages.length - 1; i >= 0; i--) {
+                const msgStr = state.dapMessages[i]
+                
+                try {
+                    const jsonStart = msgStr.indexOf('{')
+                    if (jsonStart === -1) continue
+                    
+                    const jsonStr = msgStr.substring(jsonStart)
+                    const msg = parseJsonWithComments(jsonStr)
+                    
+                    if (msg.type === 'event' && msg.event === 'stopped' && msg.body) {
+                        const reason = msg.body.reason
+                        if (reason === 'exception') {
+                            const exceptionInfo = {
+                                reason: reason,
+                                threadId: msg.body.threadId,
+                                text: msg.body.text,
+                                description: msg.body.description,
+                                allThreadsStopped: msg.body.allThreadsStopped,
+                                timestamp: new Date().toISOString()
+                            }
+                            
+                            return {
+                                content: [{
+                                    type: 'text' as const,
+                                    text: JSON.stringify(exceptionInfo, null, 2)
+                                }]
+                            }
+                        }
+                    }
+                    
+                    if (msg.type === 'event' && msg.event === 'output' && msg.body?.output) {
+                        const output = msg.body.output
+                        if (output.includes('Error:') || output.includes('Exception:') || output.includes('TypeError:') || output.includes('ReferenceError:')) {
+                            exceptionInfo.push({
+                                type: 'output',
+                                message: output.trim(),
+                                timestamp: new Date().toISOString()
+                            })
+                        }
+                    }
+                } catch (e) {
+                    continue
+                }
+            }
+            
+            if (exceptionInfo.length === 0) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No exception information available' }, null, 2)
+                    }]
+                }
+            }
+            
+            const limitedExceptions = limit ? exceptionInfo.slice(-limit) : exceptionInfo
+            
+            const result = {
+                sessionId: session.id,
+                sessionName: session.name,
+                exceptions: limitedExceptions,
+                totalExceptions: limitedExceptions.length
+            }
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify(result, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
 // 모든 도구 export
 export const allTools = [
     addBreakpointTool,
@@ -850,5 +1420,16 @@ export const allTools = [
     evaluateExpressionTool,
     inspectVariableTool,
     listDebugConfigsTool,
-    selectDebugConfigTool
+    selectDebugConfigTool,
+    
+    // 새로운 도구들 추가
+    getDapLogTool,
+    getBreakpointsTool,
+    getActiveSessionTool,
+    getDebugConsoleTool,
+    getActiveStackItemTool,
+    getCallStackTool,
+    getVariablesScopeTool,
+    getThreadListTool,
+    getExceptionInfoTool
 ]

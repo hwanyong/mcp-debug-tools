@@ -115,6 +115,8 @@ Add to your `mcp.json` file:
 - `add-breakpoint` - Add breakpoint to specific file and line
 - `remove-breakpoint` - Remove breakpoint from specific file and line
 - `list-breakpoints` - List all breakpoints in workspace
+- `add-breakpoints` - Add multiple breakpoints at once
+- `clear-breakpoints` - Remove all breakpoints or breakpoints from specific files
 
 #### Debug Control
 - `start-debug` - Start debug session with configuration
@@ -125,16 +127,50 @@ Add to your `mcp.json` file:
 - `step-out` - Step out of function
 - `pause` - Pause execution
 
+#### Variable and Expression Tools
+- `evaluate-expression` - Evaluate expression in debug context
+- `inspect-variable` - Get detailed information about a specific variable
+
+#### Debug Configuration Management
+- `list-debug-configs` - List all available debug configurations from launch.json
+- `select-debug-config` - Select a debug configuration by name
+
 #### Status Queries
 - `get-debug-state` - Get current debug session state
 
 ### Resources (Read-only Information)
 
+#### Core Debug Information
 - `dap-log://current` - DAP protocol message log
 - `debug://breakpoints` - Current breakpoint information
 - `debug://active-session` - Active debug session details
 - `debug://console` - Debug console output
 - `debug://active-stack-item` - Current stack frame information
+
+#### Advanced Debug Information
+- `debug://call-stack` - Complete call stack information
+- `debug://variables-scope` - All variables in current scope
+- `debug://thread-list` - All threads in debug session
+- `debug://exception-info` - Exception details and stack trace
+
+### New Tools (Latest Additions)
+
+#### Variable Inspection Tools
+- `get-variables-scope` - Retrieve all variables in current scope with detailed information
+- `get-call-stack` - Get complete call stack with frame details
+- `get-thread-list` - Retrieve all threads with their states
+
+#### Debug Session Information
+- `get-dap-log` - Retrieve all DAP protocol messages for analysis
+- `get-active-session` - Get detailed information about the currently active debug session
+- `get-debug-console` - Retrieve recent debug console output with filtering options
+- `get-active-stack-item` - Get currently focused thread or stack frame information
+
+#### Exception Handling
+- `get-exception-info` - Retrieve exception details and stack trace with comprehensive error information
+
+#### Enhanced Breakpoint Management
+- `get-breakpoints` - Retrieve all current breakpoints with detailed properties (condition, hitCondition, logMessage)
 
 ## 🔧 Technical Details
 
