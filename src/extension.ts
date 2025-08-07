@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { state } from './state'
 import { initializeMcpServer, createHttpApp, startHttpServer, stopHttpServer } from './server'
 import { registerDapTracker } from './dap-tracker'
-import { registerCommands } from './commands'
+import { registerCommands, setStatusBarUpdater } from './commands'
 import { updateAllPanels } from './monitor-panel'
 
 let statusBarItem: vscode.StatusBarItem
@@ -32,6 +32,9 @@ export async function activate(context: vscode.ExtensionContext) {
             // Update status bar to show running
             updateStatusBar('running')
         })
+
+        // Set status bar updater for commands
+        setStatusBarUpdater(updateStatusBar)
 
         // Register extension commands
         registerCommands(context)
@@ -79,7 +82,7 @@ export async function deactivate() {
 /**
  * Update status bar item based on server state
  */
-function updateStatusBar(status: 'initializing' | 'running' | 'stopping' | 'error') {
+function updateStatusBar(status: 'initializing' | 'running' | 'stopping' | 'error' | 'stopped') {
     if (!statusBarItem) return
     
     switch (status) {
@@ -100,6 +103,12 @@ function updateStatusBar(status: 'initializing' | 'running' | 'stopping' | 'erro
             statusBarItem.tooltip = 'MCP Debug Server is stopping'
             statusBarItem.backgroundColor = undefined
             statusBarItem.color = new vscode.ThemeColor('terminal.ansiYellow')
+            break
+        case 'stopped':
+            statusBarItem.text = '$(circle-slash) DAP-MCP:stopped'
+            statusBarItem.tooltip = 'MCP Debug Server is stopped - Click to open monitor panel'
+            statusBarItem.backgroundColor = undefined
+            statusBarItem.color = new vscode.ThemeColor('terminal.ansiGray')
             break
         case 'error':
             statusBarItem.text = '$(error) MCP Server error'

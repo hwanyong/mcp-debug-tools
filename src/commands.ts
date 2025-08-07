@@ -2,6 +2,16 @@ import * as vscode from 'vscode'
 import { getRelativePath, getWorkspaceRoot } from './utils/path'
 import * as path from 'path'
 import { createMonitoringPanel } from './monitor-panel'
+import { initializeMcpServer, createHttpApp, startHttpServer, stopHttpServer } from './server'
+import { state } from './state'
+import { updateAllPanels } from './monitor-panel'
+
+// Status bar update function (import from extension.ts)
+let updateStatusBar: (status: 'initializing' | 'running' | 'stopping' | 'error' | 'stopped') => void
+
+export function setStatusBarUpdater(updater: typeof updateStatusBar) {
+    updateStatusBar = updater
+}
 
 /**
  * Core logic to add a breakpoint to a specified URI and line number.
@@ -29,6 +39,70 @@ export async function addBreakpointToUri(filePath: string, lineNumber: number) {
         vscode.debug.addBreakpoints([newBreakpoint])
     } catch (error) {
         console.error(`❌ [ERROR] Failed to add breakpoint:`, error)
+        throw error
+    }
+}
+
+/**
+ * Start the MCP server
+ */
+async function startServer() {
+    if (state.isServerRunning()) {
+        vscode.window.showInformationMessage('Server is already running')
+        return
+    }
+    
+    try {
+        updateStatusBar('initializing')
+        
+        // Initialize MCP Server
+        const mcpServer = initializeMcpServer()
+        state.mcpServer = mcpServer
+
+        // Create HTTP app
+        const app = createHttpApp(mcpServer)
+
+        // Start HTTP server
+        await startHttpServer(app, () => {
+            updateStatusBar('running')
+            updateAllPanels()
+            vscode.window.showInformationMessage('Server started successfully')
+        })
+    } catch (error) {
+        updateStatusBar('error')
+        vscode.window.showErrorMessage(`Failed to start server: ${error}`)
+        throw error
+    }
+}
+
+/**
+ * Stop the MCP server
+ */
+async function stopServer() {
+    if (!state.isServerRunning()) {
+        vscode.window.showInformationMessage('Server is not running')
+        return
+    }
+    
+    try {
+        updateStatusBar('stopping')
+        
+        // Stop HTTP server
+        await stopHttpServer()
+
+        // Close MCP server
+        if (state.mcpServer) {
+            state.mcpServer.close()
+        }
+
+        // Reset state
+        state.reset()
+        
+        updateStatusBar('stopped')
+        updateAllPanels()
+        vscode.window.showInformationMessage('Server stopped successfully')
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to stop server: ${error}`)
         throw error
     }
 }
@@ -75,4 +149,12 @@ export function registerCommands(context: vscode.ExtensionContext): void {
     })
 
     context.subscriptions.push(openMonitorPanelCommand)
+
+    // Command to start server
+    const startServerCommand = vscode.commands.registerCommand('dap-proxy.startServer', startServer)
+    context.subscriptions.push(startServerCommand)
+
+    // Command to stop server
+    const stopServerCommand = vscode.commands.registerCommand('dap-proxy.stopServer', stopServer)
+    context.subscriptions.push(stopServerCommand)
 }

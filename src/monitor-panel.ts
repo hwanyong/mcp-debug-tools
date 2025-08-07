@@ -32,6 +32,12 @@ export function createMonitoringPanel() {
             case 'refresh':
                 updatePanel(panel)
                 break
+            case 'startServer':
+                vscode.commands.executeCommand('dap-proxy.startServer')
+                break
+            case 'stopServer':
+                vscode.commands.executeCommand('dap-proxy.stopServer')
+                break
         }
     })
     
@@ -237,6 +243,14 @@ function getWebviewContent(): string {
             <div>
                 <span class="status-indicator ${serverStatus.isRunning ? 'status-running' : 'status-stopped'}"></span>
                 <strong>${serverStatus.isRunning ? '🟢 Running' : '🔴 Stopped'}</strong>
+                
+                <!-- 서버 제어 버튼 추가 -->
+                <div style="margin-top: 15px;">
+                    ${serverStatus.isRunning ? 
+                        '<button class="button" onclick="stopServer()" style="background-color: #f44336;">🛑 Stop Server</button>' :
+                        '<button class="button" onclick="startServer()" style="background-color: #4CAF50;">▶️ Start Server</button>'
+                    }
+                </div>
             </div>
             
             <div class="info-grid">
@@ -309,6 +323,14 @@ function getWebviewContent(): string {
                 
                 function refresh() {
                     vscode.postMessage({command: 'refresh'});
+                }
+                
+                function startServer() {
+                    vscode.postMessage({command: 'startServer'});
+                }
+                
+                function stopServer() {
+                    vscode.postMessage({command: 'stopServer'});
                 }
                 
                 // Auto refresh every 5 seconds

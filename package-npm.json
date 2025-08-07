@@ -5,6 +5,7 @@
   "version": "0.0.6",
   "author": "Hwanyong Yoo",
   "license": "GPL-3.0",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/hwanyong/mcp-debug-tools.git"
@@ -61,6 +62,7 @@
     "prepublishOnly": "npm run compile"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@types/vscode": "^1.85.0",
@@ -76,6 +78,6 @@
     "json-schema": "^0.4.0",
     "@modelcontextprotocol/sdk": "^1.17.1",
     "zod": "^3.22.4",
-    "express": "^4.18.2"
+    "express": "^4.21.2"
   }
 }
