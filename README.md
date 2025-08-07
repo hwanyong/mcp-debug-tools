@@ -1,71 +1,288 @@
-# mcp-debug-tools README
+# MCP Debug Tools
 
-This is the README for your extension "mcp-debug-tools". After writing up a brief description, we recommend including the following sections.
+A comprehensive debugging solution that combines VSCode extension and CLI tool for MCP-based debugging with DAP protocol support. This project enables AI tools like Cursor to access VSCode's debugging capabilities through the Model Context Protocol (MCP).
 
-## Features
+## ⚠️ Beta Testing Notice
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+**This program is currently in beta testing phase.** Please report any issues or provide feedback to help improve the tool.
 
-For example if there is an image subfolder under your extension project workspace:
+**Contact:** [yoo.hwanyong@gmail.com](mailto:yoo.hwanyong@gmail.com)
 
-\!\[feature X\]\(images/feature-x.png\)
+## 🎯 Overview
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+MCP Debug Tools consists of two independent programs that work together to provide debugging capabilities:
 
-## Requirements
+1. **VSCode Extension (Server)**: Runs inside VSCode, provides HTTP server for MCP communication
+2. **CLI Tool (Client)**: Standalone command-line tool that connects to the extension and exposes MCP services
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## 📦 Two Distribution Methods
 
-## Extension Settings
+This project is distributed as **two independent programs**:
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+### 1. VSCode Extension (Server)
 
-For example:
+A VSCode extension distributed through the VSCode Marketplace that acts as the MCP server.
 
-This extension contributes the following settings:
+#### Installation
+```bash
+# Install from VSCode Marketplace
+# Or install .vsix file directly in VSCode
+```
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+#### Features
+- DAP message tracking and debugging tools
+- HTTP server (port 8890) for MCP communication
+- Monitoring panel and status bar integration
+- MCP server role for external tools
 
-## Known Issues
+### 2. CLI Tool (Client)
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+A command-line tool distributed as an npm package that acts as the MCP client.
 
-## Release Notes
+#### Installation
+```bash
+# No installation required - runs via npx
+# The tool is automatically downloaded and executed
+```
 
-Users appreciate release notes as you update your extension.
+#### Usage
+```bash
+# Run via npx (automatically downloads and executes)
+npx @hwanyong/mcp-debug-tools
 
-### 1.0.0
+# Specify custom port
+npx @hwanyong/mcp-debug-tools --port=8891
 
-Initial release of ...
+# Show help
+npx @hwanyong/mcp-debug-tools --help
+```
 
-### 1.0.1
+#### MCP Configuration
+Add to your `mcp.json` file:
+```json
+{
+  "mcpServers": {
+    "dap-proxy": {
+      "command": "npx",
+      "args": ["-y", "@hwanyong/mcp-debug-tools", "--port=8890"],
+      "env": {}
+    }
+  }
+}
+```
 
-Fixed issue #.
+#### Features
+- Connects to VSCode extension's HTTP server
+- Acts as MCP client to extension, MCP server to AI tools
+- Provides stdio-based MCP services to Cursor and other AI tools
 
-### 1.1.0
+## 🔄 Architecture
 
-Added features X, Y, and Z.
+```
+┌─────────────────┐    HTTP    ┌─────────────────┐    stdio    ┌─────────────────┐
+│   VSCode        │ ──────────▶ │   CLI Tool      │ ──────────▶ │   Cursor/AI      │
+│   Extension     │   (8890)    │   (MCP Client)  │             │   (MCP Client)   │
+│   (MCP Server)  │             │   (MCP Server)  │             │                 │
+└─────────────────┘             └─────────────────┘             └─────────────────┘
+```
+
+### Data Flow
+1. **VSCode Extension** → Runs HTTP server (port 8890)
+2. **CLI Tool** → Connects to extension via HTTP client
+3. **CLI Tool** → Provides MCP services to AI tools via stdio
+
+### Dependencies
+- CLI Tool requires VSCode Extension to be running first
+- Extension provides HTTP server, CLI acts as proxy
+
+## 🚀 Use Cases
+
+### 1. VSCode Extension Only
+- Use debugging tools within VSCode
+- Monitor DAP messages through monitoring panel
+- Manage breakpoints and debug sessions
+
+### 2. CLI Tool with Extension
+1. Install and activate VSCode Extension
+2. Configure MCP in your AI tool (e.g., Cursor)
+3. Use debugging capabilities from AI tools via MCP
+
+## 📋 Features
+
+### Tools (Executable Commands)
+
+#### Breakpoint Management
+- `add-breakpoint` - Add breakpoint to specific file and line
+- `remove-breakpoint` - Remove breakpoint from specific file and line
+- `list-breakpoints` - List all breakpoints in workspace
+
+#### Debug Control
+- `start-debug` - Start debug session with configuration
+- `stop-debug` - Stop active debug session
+- `continue` - Continue execution
+- `step-over` - Step over current line
+- `step-into` - Step into function
+- `step-out` - Step out of function
+- `pause` - Pause execution
+
+#### Status Queries
+- `get-debug-state` - Get current debug session state
+
+### Resources (Read-only Information)
+
+- `dap-log://current` - DAP protocol message log
+- `debug://breakpoints` - Current breakpoint information
+- `debug://active-session` - Active debug session details
+- `debug://console` - Debug console output
+- `debug://active-stack-item` - Current stack frame information
+
+## 🔧 Technical Details
+
+### MCP Protocol Integration
+- Uses Model Context Protocol for AI tool communication
+- HTTP-based transport between extension and CLI
+- stdio-based transport between CLI and AI tools
+
+### DAP Protocol Support
+- Tracks Debug Adapter Protocol messages
+- Provides debugging capabilities through DAP
+- Supports multiple debugger types
+
+### Architecture Components
+- **Extension**: VSCode extension with HTTP server
+- **CLI**: Standalone tool with MCP client/server
+- **State Management**: Global state for sessions and messages
+- **Tools**: MCP tools for debugging operations
+- **Resources**: MCP resources for debugging information
+
+## ⚠️ Important Notes
+
+### Prerequisites
+1. **CLI Tool Usage**: VSCode Extension must be running first
+2. **Port Conflicts**: Default port 8890, ensure no conflicts
+3. **Dependencies**: CLI Tool depends on Extension's HTTP server
+
+### Current Limitations
+- **Single Session Support**: Only one debugging session per server is supported
+- **Multiple Sessions**: For multiple simultaneous debugging sessions, you need to change the port in MCP configuration
+- **VSCode Debug API limitations**: High-level API only
+- **DAP message parsing**: Read-only, no direct transmission
+- **Real-time synchronization**: Constraints due to MCP protocol
+- **Debugger-specific features**: Depend on individual debugger support
+
+### Security Considerations
+- HTTP server runs on localhost only
+- No authentication required for local development
+- DNS rebinding protection disabled for local use
+
+## 📝 Configuration
+
+### Extension Settings
+- Server port configuration (default: 8890)
+- Logging level settings
+- Panel update frequency
+
+### CLI Tool Options
+- `--port=<number>` - Specify server port
+- `--domain=<url>` - Specify server domain
+- `--help, -h` - Show help information
+
+### MCP Configuration
+For AI tools like Cursor, add to your `mcp.json`:
+```json
+{
+  "mcpServers": {
+    "dap-proxy": {
+      "command": "npx",
+      "args": ["-y", "@hwanyong/mcp-debug-tools", "--port=8890"],
+      "env": {}
+    }
+  }
+}
+```
+
+### Multiple Debugging Sessions
+To run multiple debugging sessions simultaneously, modify your MCP configuration with different ports:
+```json
+{
+  "mcpServers": {
+    "dap-proxy": {
+      "command": "npx",
+      "args": ["-y", "@hwanyong/mcp-debug-tools", "--port=8891"], // other port
+      "env": {}
+    }
+  }
+}
+```
+
+## 🚀 Getting Started
+
+### Quick Start
+1. Install VSCode Extension from Marketplace
+2. Activate extension in VSCode
+3. Configure MCP in your AI tool (e.g., Cursor)
+4. Use debugging features from AI tools via MCP
+
+## 📊 Performance Considerations
+
+### Memory Management
+- DAP message accumulation disabled to prevent memory leaks
+- Session cleanup on transport close
+- Automatic garbage collection for old messages
+
+### Scalability
+- Multiple session support
+- Concurrent transport handling
+- Efficient message parsing
+
+## 🔮 Future Enhancements
+
+### Planned Features
+- **Multi-Session Support**: Support for multiple debugging sessions on a single server - This will allow you to debug multiple applications simultaneously without needing separate MCP configurations
+- **Customizable Data Structures**: Unified tool integration to reduce frequent tool calls - This feature will consolidate multiple tools into one, optimizing performance and reducing the overhead of multiple tool invocations
+- Variable inspection and modification
+- Call stack analysis
+- Thread management
+- Exception handling
+- Module information
+- Watch expressions
+
+### Architecture Improvements
+- WebSocket support for real-time updates
+- Enhanced error handling
+- Better session management
+- Performance optimizations
+
+*These features are expected to significantly improve the debugging experience and tool efficiency.*
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🤝 Contributing
+
+We welcome contributions! Please feel free to submit issues and pull requests.
+
+## 📚 Documentation
+
+- [VSCode Extension API](https://code.visualstudio.com/api/references/vscode-api#debug)
+- [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/)
+- [MCP Specification](https://modelcontextprotocol.io/)
+
+## 🐛 Known Issues
+
+- Some DAP features require custom request API (not yet available)
+- Real-time updates limited by MCP protocol constraints
+- Debugger-specific features depend on individual debugger support
+
+## 📞 Support
+
+For issues and questions:
+- Create GitHub issue
+- Check existing documentation
+- Review implementation plan in `/docs` folder
+- **Contact:** [yoo.hwanyong@gmail.com](mailto:yoo.hwanyong@gmail.com)
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Enjoy debugging with MCP!**
