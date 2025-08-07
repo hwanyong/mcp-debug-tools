@@ -1,5 +1,5 @@
 {
-  "name": "mcp-debug-tools",
+  "name": "@uhd_kr/mcp-debug-tools",
   "displayName": "MCP Debug Tools",
   "description": "VSCode extension and CLI tool for MCP-based debugging with DAP protocol support",
   "version": "0.0.1",
@@ -65,13 +65,13 @@
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.25.1",
-    "typescript": "^5.8.3",
-    "@modelcontextprotocol/sdk": "^0.4.0",
-    "zod": "^3.22.4",
-    "express": "^4.18.2"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@types/json-schema": "^7.0.15",
-    "json-schema": "^0.4.0"
+    "json-schema": "^0.4.0",
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "zod": "^3.22.4",
+    "express": "^4.18.2"
   }
 }

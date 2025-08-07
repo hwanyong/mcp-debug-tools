@@ -14,7 +14,7 @@
 
 MCP Debug Tools는 두 개의 독립적인 프로그램으로 배포됩니다:
 
-- **CLI Tool**: npm 패키지 (`@hwanyong/mcp-debug-tools`)
+- **CLI Tool**: npm 패키지 (`@uhd_kr/mcp-debug-tools`)
 - **VSCode Extension**: VSCode Marketplace
 
 ## 🚀 첫 배포
@@ -51,13 +51,13 @@ npm publish --access public
 #### 1-4. 배포 확인
 ```bash
 # 패키지 정보 확인
-npm view @hwanyong/mcp-debug-tools
+npm view @uhd_kr/mcp-debug-tools
 
 # 버전 확인
-npm view @hwanyong/mcp-debug-tools version
+npm view @uhd_kr/mcp-debug-tools version
 
 # npx 테스트
-npx @hwanyong/mcp-debug-tools --help
+npx @uhd_kr/mcp-debug-tools --help
 ```
 
 ### 2. VSCode Extension 첫 배포
@@ -96,7 +96,7 @@ npm run vscode:prepublish
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@hwanyong/mcp-debug-tools", "--port=8890"],
+      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8890"],
       "env": {}
     }
   }
@@ -134,10 +134,10 @@ npm publish
 #### 1-3. 배포 확인
 ```bash
 # 새 버전 확인
-npm view @hwanyong/mcp-debug-tools version
+npm view @uhd_kr/mcp-debug-tools version
 
 # npx 테스트
-npx @hwanyong/mcp-debug-tools --help
+npx @uhd_kr/mcp-debug-tools --help
 ```
 
 ### 2. VSCode Extension 재배포
@@ -176,7 +176,7 @@ npm run vscode:prepublish
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@hwanyong/mcp-debug-tools@0.0.2", "--port=8890"],
+      "args": ["-y", "@uhd_kr/mcp-debug-tools@0.0.2", "--port=8890"],
       "env": {}
     }
   }
@@ -208,7 +208,7 @@ npm org add hwanyong <username>
 #### 패키지 이름 충돌
 ```bash
 # 패키지 이름 사용 가능 여부 확인
-npm search @hwanyong/mcp-debug-tools
+npm search @uhd_kr/mcp-debug-tools
 
 # 다른 스코프 사용
 npm init --scope=@your-username
@@ -241,8 +241,8 @@ unzip -l *.vsix
 - [ ] 스코프 생성/확인
 - [ ] 코드 빌드 (`npm run compile`)
 - [ ] 첫 배포 (`npm publish --access public`)
-- [ ] 배포 확인 (`npm view @hwanyong/mcp-debug-tools`)
-- [ ] npx 테스트 (`npx @hwanyong/mcp-debug-tools --help`)
+- [ ] 배포 확인 (`npm view @uhd_kr/mcp-debug-tools`)
+- [ ] npx 테스트 (`npx @uhd_kr/mcp-debug-tools --help`)
 
 ### VSCode Extension 첫 배포
 - [ ] Publisher 계정 생성
@@ -274,10 +274,10 @@ unzip -l *.vsix
 ### CLI Tool
 ```bash
 # 버전 확인
-npm view @hwanyong/mcp-debug-tools version
+npm view @uhd_kr/mcp-debug-tools version
 
 # 다운로드 테스트
-npx @hwanyong/mcp-debug-tools --help
+npx @uhd_kr/mcp-debug-tools --help
 
 # MCP 연결 테스트
 # Cursor에서 MCP 기능 사용 테스트
@@ -307,7 +307,7 @@ npm run compile
 npm publish
 
 echo "✅ CLI Tool 재배포 완료!"
-echo "새 버전: $(npm view @hwanyong/mcp-debug-tools version)"
+echo "새 버전: $(npm view @uhd_kr/mcp-debug-tools version)"
 ```
 
 ### Extension 재배포 스크립트

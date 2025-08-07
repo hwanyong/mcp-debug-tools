@@ -48,13 +48,13 @@ A command-line tool distributed as an npm package that acts as the MCP client.
 #### Usage
 ```bash
 # Run via npx (automatically downloads and executes)
-npx @hwanyong/mcp-debug-tools
+npx @uhd_kr/mcp-debug-tools
 
 # Specify custom port
-npx @hwanyong/mcp-debug-tools --port=8891
+npx @uhd_kr/mcp-debug-tools --port=8891
 
 # Show help
-npx @hwanyong/mcp-debug-tools --help
+npx @uhd_kr/mcp-debug-tools --help
 ```
 
 #### MCP Configuration
@@ -64,7 +64,7 @@ Add to your `mcp.json` file:
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@hwanyong/mcp-debug-tools", "--port=8890"],
+      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8890"],
       "env": {}
     }
   }
@@ -230,7 +230,7 @@ For AI tools like Cursor, add to your `mcp.json`:
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@hwanyong/mcp-debug-tools", "--port=8890"],
+      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8890"],
       "env": {}
     }
   }
@@ -244,7 +244,7 @@ To run multiple debugging sessions simultaneously, modify your MCP configuration
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@hwanyong/mcp-debug-tools", "--port=8891"], // other port
+      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8891"], // other port
       "env": {}
     }
   }
@@ -293,7 +293,15 @@ To run multiple debugging sessions simultaneously, modify your MCP configuration
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+**Key Terms:**
+- ✅ **Free to use, modify, and distribute**
+- ✅ **Source code must be shared when distributing modified versions**
+- ✅ **Commercial use allowed with source code sharing**
+- ✅ **Network use (web services) also requires source code sharing**
+
+For more information about GPL v3, visit: https://www.gnu.org/licenses/gpl-3.0.html
 
 ## 🤝 Contributing
 
