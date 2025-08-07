@@ -24,9 +24,26 @@ This project is distributed as **two independent programs**:
 A VSCode extension distributed through the VSCode Marketplace that acts as the MCP server.
 
 #### Installation
+
+**⚠️ Prerequisite for MCP Usage**: You must install the VSCode extension before using the MCP CLI tool.
+
+**Method 1: Install from VSCode Marketplace**
+1. Open VSCode (or VSCode-based editors like Cursor, Windsurf, etc.)
+2. Go to the Extensions view (Ctrl+Shift+X)
+3. Search for "MCP Debug Tools"
+4. Click "Install" on the extension by Hwanyong Yoo
+
+**Method 2: Direct Marketplace Link**
+- Visit: [MCP Debug Tools on VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=uhd.mcp-debug-tools)
+- Click "Install" button
+- The extension will be installed in your VSCode (including Cursor, Windsurf, and other VSCode-based editors)
+
+**Method 3: Manual Installation**
 ```bash
-# Install from VSCode Marketplace
-# Or install .vsix file directly in VSCode
+# Download .vsix file and install manually
+# 1. Download from marketplace
+# 2. In VSCode: Ctrl+Shift+P → "Extensions: Install from VSIX"
+# 3. Select the downloaded .vsix file
 ```
 
 #### Features

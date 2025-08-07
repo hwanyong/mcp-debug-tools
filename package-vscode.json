@@ -10,6 +10,15 @@
     "type": "git",
     "url": "https://github.com/hwanyong/mcp-debug-tools.git"
   },
+  "keywords": [
+    "vscode-extension",
+    "debugging",
+    "mcp",
+    "dap",
+    "debug-adapter-protocol",
+    "model-context-protocol",
+    "cli-tool"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
