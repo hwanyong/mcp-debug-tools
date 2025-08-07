@@ -293,7 +293,7 @@ To run multiple debugging sessions simultaneously, modify your MCP configuration
 
 ## 📄 License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](https://github.com/hwanyong/mcp-debug-tools/blob/main/LICENSE) file for details.
 
 **Key Terms:**
 - ✅ **Free to use, modify, and distribute**
