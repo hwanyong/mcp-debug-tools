@@ -78,59 +78,61 @@ export const addBreakpointsTool = {
         const { breakpoints } = args
         
         try {
-            const createdBreakpoints: vscode.SourceBreakpoint[] = []
             const results: any[] = []
+            const BATCH_SIZE = 5
             
-            for (const bp of breakpoints) {
-                const { file, line, condition, hitCondition, logMessage } = bp
-                const tmpLogMessage = null
+            // 배치 단위로 처리
+            for (let i = 0; i < breakpoints.length; i += BATCH_SIZE) {
+                const batch = breakpoints.slice(i, i + BATCH_SIZE)
+                const batchBreakpoints: vscode.SourceBreakpoint[] = []
                 
-                const uri = vscode.Uri.file(path.join(getWorkspaceRoot(), file))
-                const location = new vscode.Location(uri, new vscode.Position(line - 1, 0))
-                
-                // 브레이크포인트 생성
-                const breakpoint = new vscode.SourceBreakpoint(location)
-                
-                // 조건부 설정 (옵셔널)
-                if (condition) {
-                    (breakpoint as any).condition = condition
+                for (const bp of batch) {
+                    const { file, line, condition, hitCondition } = bp
+                    const uri = vscode.Uri.file(path.join(getWorkspaceRoot(), file))
+                    const location = new vscode.Location(uri, new vscode.Position(line - 1, 0))
+                    
+                    // 브레이크포인트 생성
+                    const breakpoint = new vscode.SourceBreakpoint(location)
+                    
+                    // 조건부 설정 (옵셔널)
+                    if (condition) {
+                        (breakpoint as any).condition = condition
+                    }
+                    
+                    if (hitCondition) {
+                        (breakpoint as any).hitCondition = hitCondition
+                    }
+                    
+                    batchBreakpoints.push(breakpoint)
+                    results.push({
+                        file: file,
+                        line: line,
+                        condition: condition || null,
+                        hitCondition: hitCondition || null,
+                        logMessage: null,
+                        message: condition || hitCondition ? 
+                            'Conditional breakpoint added successfully' : 
+                            'Breakpoint added successfully'
+                    })
                 }
                 
-                if (hitCondition) {
-                    (breakpoint as any).hitCondition = hitCondition
+                // 각 배치를 개별적으로 처리
+                await vscode.debug.addBreakpoints(batchBreakpoints)
+                
+                // 배치 사이에 짧은 지연 추가
+                if (i + BATCH_SIZE < breakpoints.length) {
+                    await new Promise(resolve => setTimeout(resolve, 100))
                 }
-                
-                // if (logMessage) {
-                //     (breakpoint as any).logMessage = logMessage
-                // }
-                
-                createdBreakpoints.push(breakpoint)
-                
-                results.push({
-                    file: file,
-                    line: line,
-                    condition: condition || null,
-                    hitCondition: hitCondition || null,
-                    logMessage: tmpLogMessage || null,
-                    status: 'created'
-                })
             }
             
-            // 모든 브레이크포인트를 한번에 추가
-            vscode.debug.addBreakpoints(createdBreakpoints)
-            
-            const summary = {
-                totalBreakpoints: breakpoints.length,
-                createdBreakpoints: createdBreakpoints.length,
-                results: results,
-                message: `Successfully added ${createdBreakpoints.length} breakpoint(s)`
-            }
-            
-            return { 
-                content: [{ 
-                    type: 'text' as const, 
-                    text: JSON.stringify(summary, null, 2) 
-                }] 
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify({
+                        totalBreakpoints: breakpoints.length,
+                        results: results
+                    }, null, 2)
+                }]
             }
         } catch (error: any) {
             return { 
