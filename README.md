@@ -39,6 +39,7 @@ A VSCode extension distributed through the VSCode Marketplace that acts as the M
 - The extension will be installed in your VSCode (including Cursor, Windsurf, and other VSCode-based editors)
 
 **Method 3: Manual Installation**
+[download](https://github.com/hwanyong/mcp-debug-tools/releases)
 ```bash
 # Download .vsix file and install manually
 # 1. Download from marketplace
@@ -96,9 +97,9 @@ Add to your `mcp.json` file:
 ## 🔄 Architecture
 
 ```
-┌─────────────────┐    HTTP    ┌─────────────────┐    stdio    ┌─────────────────┐
-│   VSCode        │ ──────────▶ │   CLI Tool      │ ──────────▶ │   Cursor/AI      │
-│   Extension     │   (8890)    │   (MCP Client)  │             │   (MCP Client)   │
+┌─────────────────┐    HTTP     ┌─────────────────┐    stdio    ┌─────────────────┐
+│   VSCode        │ ──────────▶ │   CLI Tool      │ ──────────▶ │   Cursor/AI     │
+│   Extension     │   (8890)    │   (MCP Client)  │             │   (MCP Client)  │
 │   (MCP Server)  │             │   (MCP Server)  │             │                 │
 └─────────────────┘             └─────────────────┘             └─────────────────┘
 ```
