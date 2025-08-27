@@ -96,7 +96,7 @@ npm run vscode:prepublish
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8890"],
+      "args": ["-y", "@uhd_kr/mcp-debug-tools"],
       "env": {}
     }
   }
@@ -176,7 +176,7 @@ npm run vscode:prepublish
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@uhd_kr/mcp-debug-tools@0.0.2", "--port=8890"],
+      "args": ["-y", "@uhd_kr/mcp-debug-tools@0.0.2"],
       "env": {}
     }
   }
@@ -349,4 +349,4 @@ npm version major
 
 ---
 
-**참고**: 이 문서는 배포 과정을 안내하며, 실제 배포 전에 충분한 테스트를 권장합니다. 
+**참고**: 이 문서는 배포 과정을 안내하며, 실제 배포 전에 충분한 테스트를 권장합니다.
