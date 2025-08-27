@@ -1,5 +1,8 @@
 import * as vscode from 'vscode'
+import * as path from 'path'
+import * as fs from 'fs'
 import { state } from './state'
+import { WorkspaceConfig } from './config-manager'
 
 /**
  * Create and show the monitoring panel
@@ -77,6 +80,31 @@ function getServerStatus() {
 }
 
 /**
+ * Get workspace configuration status
+ */
+function getWorkspaceConfigStatus(): { exists: boolean; config?: WorkspaceConfig; path?: string } {
+    try {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+        if (!workspaceFolder) {
+            return { exists: false }
+        }
+        
+        const configPath = path.join(workspaceFolder.uri.fsPath, '.mcp-debug-tools', 'config.json')
+        
+        if (fs.existsSync(configPath)) {
+            const configData = fs.readFileSync(configPath, 'utf8')
+            const config = JSON.parse(configData) as WorkspaceConfig
+            return { exists: true, config, path: configPath }
+        }
+        
+        return { exists: false, path: configPath }
+    } catch (error) {
+        console.error('Error reading workspace config:', error)
+        return { exists: false }
+    }
+}
+
+/**
  * Generate mcp.json configuration for current server
  */
 function generateMcpConfig(): string {
@@ -116,6 +144,34 @@ function copyMcpConfigToClipboard() {
 function getWebviewContent(): string {
     const serverStatus = getServerStatus()
     const mcpConfig = generateMcpConfig()
+    const configStatus = getWorkspaceConfigStatus()
+    
+    // Format config info for display
+    let configInfo = ''
+    if (configStatus.exists && configStatus.config) {
+        const age = Date.now() - configStatus.config.lastHeartbeat
+        const isAlive = age < 10000 // 10 seconds
+        configInfo = `
+            <div class="info-grid">
+                <span class="info-label">Config Path:</span>
+                <span style="font-size: 11px;">${configStatus.path}</span>
+                
+                <span class="info-label">Workspace:</span>
+                <span>${configStatus.config.workspaceName}</span>
+                
+                <span class="info-label">Instance ID:</span>
+                <span style="font-size: 11px;">${configStatus.config.vscodeInstanceId}</span>
+                
+                <span class="info-label">PID:</span>
+                <span>${configStatus.config.pid}</span>
+                
+                <span class="info-label">Heartbeat:</span>
+                <span>${isAlive ? '🟢 Active' : '🔴 Stale'} (${Math.floor(age / 1000)}s ago)</span>
+            </div>
+        `
+    } else {
+        configInfo = '<p>No workspace configuration file found.</p>'
+    }
     
     return `
         <!DOCTYPE html>
@@ -246,7 +302,7 @@ function getWebviewContent(): string {
                 
                 <!-- 서버 제어 버튼 추가 -->
                 <div style="margin-top: 15px;">
-                    ${serverStatus.isRunning ? 
+                    ${serverStatus.isRunning ?
                         '<button class="button" onclick="stopServer()" style="background-color: #f44336;">🛑 Stop Server</button>' :
                         '<button class="button" onclick="startServer()" style="background-color: #4CAF50;">▶️ Start Server</button>'
                     }
@@ -275,6 +331,11 @@ function getWebviewContent(): string {
                 <span class="info-label">DAP Messages:</span>
                 <span>${serverStatus.messageCount}</span>
             </div>
+            
+            <div class="section-divider"></div>
+            
+            <h2>📁 Workspace Configuration</h2>
+            ${configInfo}
             
             <div class="warning-box">
                 <strong>⚠️ Current Limitations</strong><br>

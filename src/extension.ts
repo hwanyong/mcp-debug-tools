@@ -4,8 +4,11 @@ import { initializeMcpServer, createHttpApp, startHttpServer, stopHttpServer } f
 import { registerDapTracker } from './dap-tracker'
 import { registerCommands, setStatusBarUpdater } from './commands'
 import { updateAllPanels } from './monitor-panel'
+import { ConfigManager } from './config-manager'
+import { registryManager } from './registry-manager'
 
 let statusBarItem: vscode.StatusBarItem
+let configManager: ConfigManager | undefined
 
 export async function activate(context: vscode.ExtensionContext) {
     try {
@@ -26,7 +29,30 @@ export async function activate(context: vscode.ExtensionContext) {
         const app = createHttpApp(mcpServer)
 
         // Start HTTP server with callback to update panels
-        await startHttpServer(app, () => {
+        await startHttpServer(app, async () => {
+            // 서버가 시작되면 설정 파일 생성
+            try {
+                // Workspace 폴더 가져오기
+                const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+                if (workspaceFolder) {
+                    // ConfigManager 초기화
+                    configManager = new ConfigManager(workspaceFolder)
+                    await configManager.initialize(state.currentPort || 3000)
+                    
+                    // 글로벌 레지스트리에 등록
+                    await registryManager.initialize()
+                    const config = await configManager.loadConfig()
+                    if (config) {
+                        const configPath = `${workspaceFolder.uri.fsPath}/.mcp-debug-tools/config.json`
+                        await registryManager.registerInstance(config, configPath)
+                    }
+                    
+                    console.log('Workspace config and registry initialized')
+                }
+            } catch (error) {
+                console.error('Failed to initialize workspace config:', error)
+            }
+            
             // Update all active panels when server starts
             updateAllPanels()
             // Update status bar to show running
@@ -55,6 +81,16 @@ export async function deactivate() {
     try {
         // Update status bar
         updateStatusBar('stopping')
+        
+        // 설정 파일 및 레지스트리 정리
+        if (configManager) {
+            const config = await configManager.loadConfig()
+            if (config) {
+                await registryManager.cleanup(config.vscodeInstanceId)
+            }
+            await configManager.cleanup()
+            configManager = undefined
+        }
         
         // Close MCP server
         if (state.mcpServer) {

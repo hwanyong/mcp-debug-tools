@@ -1,10 +1,14 @@
 import * as vscode from 'vscode'
 import { z } from 'zod'
 import * as path from 'path'
+import * as fs from 'fs'
+import * as os from 'os'
 import { getWorkspaceRoot, getRelativePath } from './utils/path'
 import { inputSchemas } from './tools-parameters'
 import { parseJsonWithComments } from './utils/json'
 import { state } from './state'
+import { WorkspaceConfig } from './config-manager'
+import { RegistryEntry } from './registry-manager'
 
 // 브레이크포인트 추가
 export const addBreakpointTool = {
@@ -1404,6 +1408,309 @@ export const getExceptionInfoTool = {
     }
 }
 
+// 10. VSCode 인스턴스 선택 도구
+export const selectVSCodeInstanceTool = {
+    name: 'select-vscode-instance',
+    config: {
+        title: 'Select VSCode Instance',
+        description: 'Select a specific VSCode instance to connect to',
+        inputSchema: inputSchemas['select-vscode-instance']
+    },
+    handler: async (args: any) => {
+        try {
+            const { port, workspace } = args
+            
+            // 글로벌 레지스트리 읽기
+            const registryPath = path.join(os.homedir(), '.mcp-debug-tools', 'active-configs.json')
+            
+            if (!fs.existsSync(registryPath)) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({
+                            message: 'No active VSCode instances found',
+                            registryPath: registryPath
+                        }, null, 2)
+                    }]
+                }
+            }
+            
+            const registryData = fs.readFileSync(registryPath, 'utf8')
+            const registry = JSON.parse(registryData)
+            
+            // 활성 인스턴스 필터링
+            const activeInstances = (registry.activeInstances || []).filter((entry: RegistryEntry) => {
+                if (fs.existsSync(entry.configPath)) {
+                    try {
+                        const configData = fs.readFileSync(entry.configPath, 'utf8')
+                        const config = JSON.parse(configData) as WorkspaceConfig
+                        const age = Date.now() - config.lastHeartbeat
+                        
+                        // PID 체크
+                        try {
+                            process.kill(config.pid, 0)
+                            return age < 15000 // 15초 이내
+                        } catch {
+                            return false
+                        }
+                    } catch {
+                        return false
+                    }
+                }
+                return false
+            })
+            
+            if (activeInstances.length === 0) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No active VSCode instances found' }, null, 2)
+                    }]
+                }
+            }
+            
+            // 포트나 workspace로 선택
+            let selectedInstance = null
+            
+            if (port) {
+                selectedInstance = activeInstances.find((i: RegistryEntry) => i.port === port)
+            } else if (workspace) {
+                selectedInstance = activeInstances.find((i: RegistryEntry) =>
+                    i.workspacePath === workspace || i.workspaceName === workspace
+                )
+            }
+            
+            if (selectedInstance) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({
+                            message: 'VSCode instance selected',
+                            instance: {
+                                port: selectedInstance.port,
+                                workspaceName: selectedInstance.workspaceName,
+                                workspacePath: selectedInstance.workspacePath,
+                                pid: selectedInstance.pid,
+                                connectionUrl: `http://localhost:${selectedInstance.port}/mcp`
+                            },
+                            recommendation: `Use --port=${selectedInstance.port} when running the CLI`
+                        }, null, 2)
+                    }]
+                }
+            } else {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({
+                            message: 'No matching VSCode instance found',
+                            availableInstances: activeInstances.map((i: RegistryEntry) => ({
+                                port: i.port,
+                                workspaceName: i.workspaceName,
+                                workspacePath: i.workspacePath
+                            }))
+                        }, null, 2)
+                    }]
+                }
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 11. Workspace 정보 조회 도구
+export const getWorkspaceInfoTool = {
+    name: 'get-workspace-info',
+    config: {
+        title: 'Get Workspace Information',
+        description: 'Get information about the current workspace',
+        inputSchema: inputSchemas['get-workspace-info']
+    },
+    handler: async (args: any) => {
+        try {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
+            
+            if (!workspaceFolder) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({ message: 'No workspace folder open' }, null, 2)
+                    }]
+                }
+            }
+            
+            // 설정 파일 확인
+            const configPath = path.join(workspaceFolder.uri.fsPath, '.mcp-debug-tools', 'config.json')
+            let configInfo = null
+            
+            if (fs.existsSync(configPath)) {
+                try {
+                    const configData = fs.readFileSync(configPath, 'utf8')
+                    const config = JSON.parse(configData) as WorkspaceConfig
+                    configInfo = {
+                        port: config.port,
+                        pid: config.pid,
+                        lastHeartbeat: config.lastHeartbeat,
+                        isAlive: (Date.now() - config.lastHeartbeat) < 10000
+                    }
+                } catch (error) {
+                    configInfo = { error: 'Failed to read config file' }
+                }
+            }
+            
+            const workspaceInfo = {
+                name: workspaceFolder.name,
+                path: workspaceFolder.uri.fsPath,
+                configFile: configPath,
+                configStatus: configInfo || 'No config file',
+                serverInfo: {
+                    isRunning: state.isServerRunning(),
+                    port: state.currentPort,
+                    sessionCount: state.getTransportCount(),
+                    uptime: state.getUptime()
+                }
+            }
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify(workspaceInfo, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
+// 12. VSCode 인스턴스 목록 도구
+export const listVSCodeInstancesTool = {
+    name: 'list-vscode-instances',
+    config: {
+        title: 'List VSCode Instances',
+        description: 'List all active VSCode instances with debug proxy',
+        inputSchema: inputSchemas['list-vscode-instances']
+    },
+    handler: async (args: any) => {
+        try {
+            const registryPath = path.join(os.homedir(), '.mcp-debug-tools', 'active-configs.json')
+            
+            if (!fs.existsSync(registryPath)) {
+                return {
+                    content: [{
+                        type: 'text' as const,
+                        text: JSON.stringify({
+                            message: 'No registry file found',
+                            instances: []
+                        }, null, 2)
+                    }]
+                }
+            }
+            
+            const registryData = fs.readFileSync(registryPath, 'utf8')
+            const registry = JSON.parse(registryData)
+            
+            // 활성 인스턴스 확인 및 상세 정보 수집
+            const instances = []
+            
+            for (const entry of (registry.activeInstances || [])) {
+                if (fs.existsSync(entry.configPath)) {
+                    try {
+                        const configData = fs.readFileSync(entry.configPath, 'utf8')
+                        const config = JSON.parse(configData) as WorkspaceConfig
+                        const age = Date.now() - config.lastHeartbeat
+                        
+                        // PID 체크
+                        let isAlive = false
+                        try {
+                            process.kill(config.pid, 0)
+                            isAlive = age < 15000
+                        } catch {
+                            isAlive = false
+                        }
+                        
+                        if (isAlive) {
+                            instances.push({
+                                port: config.port,
+                                workspaceName: config.workspaceName,
+                                workspacePath: config.workspacePath,
+                                pid: config.pid,
+                                instanceId: config.vscodeInstanceId,
+                                lastHeartbeat: config.lastHeartbeat,
+                                heartbeatAge: `${Math.floor(age / 1000)}s ago`,
+                                status: 'active',
+                                connectionUrl: `http://localhost:${config.port}/mcp`
+                            })
+                        } else {
+                            instances.push({
+                                port: config.port,
+                                workspaceName: config.workspaceName,
+                                workspacePath: config.workspacePath,
+                                pid: config.pid,
+                                instanceId: config.vscodeInstanceId,
+                                lastHeartbeat: config.lastHeartbeat,
+                                heartbeatAge: `${Math.floor(age / 1000)}s ago`,
+                                status: 'stale',
+                                reason: age >= 15000 ? 'heartbeat timeout' : 'process not found'
+                            })
+                        }
+                    } catch (error) {
+                        // 설정 파일 읽기 실패
+                        instances.push({
+                            workspaceName: entry.workspaceName,
+                            workspacePath: entry.workspacePath,
+                            status: 'error',
+                            error: 'Failed to read config file'
+                        })
+                    }
+                } else {
+                    // 설정 파일 없음
+                    instances.push({
+                        workspaceName: entry.workspaceName,
+                        workspacePath: entry.workspacePath,
+                        status: 'missing',
+                        configPath: entry.configPath
+                    })
+                }
+            }
+            
+            // 현재 VSCode 인스턴스 정보 추가
+            const currentWorkspace = vscode.workspace.workspaceFolders?.[0]
+            const currentInfo = currentWorkspace ? {
+                currentInstance: {
+                    workspaceName: currentWorkspace.name,
+                    workspacePath: currentWorkspace.uri.fsPath,
+                    serverRunning: state.isServerRunning(),
+                    port: state.currentPort
+                }
+            } : {}
+            
+            return {
+                content: [{
+                    type: 'text' as const,
+                    text: JSON.stringify({
+                        ...currentInfo,
+                        totalInstances: instances.length,
+                        activeInstances: instances.filter(i => i.status === 'active').length,
+                        instances: instances
+                    }, null, 2)
+                }]
+            }
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
+                isError: true
+            }
+        }
+    }
+}
+
 // 모든 도구 export
 export const allTools = [
     addBreakpointTool,
@@ -1433,5 +1740,10 @@ export const allTools = [
     getCallStackTool,
     getVariablesScopeTool,
     getThreadListTool,
-    getExceptionInfoTool
+    getExceptionInfoTool,
+    
+    // 새로운 Workspace 관련 도구들 추가
+    selectVSCodeInstanceTool,
+    getWorkspaceInfoTool,
+    listVSCodeInstancesTool
 ]

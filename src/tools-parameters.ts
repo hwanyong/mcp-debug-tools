@@ -80,5 +80,19 @@ export const inputSchemas = {
     'get-exception-info': {
         limit: z.number().optional().describe('Number of recent exceptions to retrieve'),
         includeStackTrace: z.boolean().optional().describe('Include stack trace information')
+    },
+    
+    // 새로운 Workspace 관련 도구
+    'select-vscode-instance': {
+        port: z.number().optional().describe('Specific VSCode instance port'),
+        workspace: z.string().optional().describe('Workspace path to select')
+    },
+    
+    'get-workspace-info': {
+        // 파라미터 없음 - 현재 workspace 정보 반환
+    },
+    
+    'list-vscode-instances': {
+        // 파라미터 없음 - 모든 활성 VSCode 인스턴스 목록
     }
 }
