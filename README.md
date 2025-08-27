@@ -1,298 +1,58 @@
 # MCP Debug Tools
 
-A comprehensive debugging solution that combines VSCode extension and CLI tool for MCP-based debugging with DAP protocol support. This project enables AI tools like Cursor to access VSCode's debugging capabilities through the Model Context Protocol (MCP).
+A bridge solution that enables AI tools (Cursor, Windsurf, etc.) to access VSCode's debugging capabilities. Connects Model Context Protocol (MCP) with Debug Adapter Protocol (DAP) to allow AI to perform debugging tasks.
 
-## ⚠️ Beta Testing Notice
+## ⚠️ Beta Testing
 
-**This program is currently in beta testing phase.** Please report any issues or provide feedback to help improve the tool.
+Currently in beta testing. Please report any issues or feedback.
 
 **Contact:** [yoo.hwanyong@gmail.com](mailto:yoo.hwanyong@gmail.com)
 
-## 🎯 Overview
+## 🎯 Key Features
 
-MCP Debug Tools consists of two independent programs that work together to provide debugging capabilities:
+### Debug Control
+- **Breakpoint Management**: Add/remove conditional breakpoints, bulk operations
+- **Execution Control**: Start/stop debug, continue/pause, Step Into/Over/Out
+- **Variable Inspection**: Check values, evaluate expressions, scope analysis
+- **Stack Tracing**: Call stack, thread management, exception information
 
-1. **VSCode Extension (Server)**: Runs inside VSCode, provides HTTP server for MCP communication
-2. **CLI Tool (Client)**: Standalone command-line tool that connects to the extension and exposes MCP services
+### Auto-Connection System
+- Automatic VSCode instance discovery and connection
+- Multiple VSCode windows support
+- Workspace-based configuration management
+- Real-time heartbeat monitoring
 
-## 📦 Two Distribution Methods
+## 📦 Installation
 
-This project is distributed as **two independent programs**:
+### 1. VSCode Extension (Required)
 
-### 1. VSCode Extension (Server)
+Provides debugging capabilities as a server in VSCode.
 
-A VSCode extension distributed through the VSCode Marketplace that acts as the MCP server.
-
-#### Installation
-
-**⚠️ Prerequisite for MCP Usage**: You must install the VSCode extension before using the MCP CLI tool.
-
-**Method 1: Install from VSCode Marketplace**
-1. Open VSCode (or VSCode-based editors like Cursor, Windsurf, etc.)
-2. Go to the Extensions view (Ctrl+Shift+X)
-3. Search for "MCP Debug Tools"
-4. Click "Install" on the extension by Hwanyong Yoo
-
-**Method 2: Direct Marketplace Link**
-- Visit: [MCP Debug Tools on VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=uhd.mcp-debug-tools)
-- Click "Install" button
-- The extension will be installed in your VSCode (including Cursor, Windsurf, and other VSCode-based editors)
-
-**Method 3: Manual Installation**
-[download](https://github.com/hwanyong/mcp-debug-tools/releases)
-```bash
-# Download .vsix file and install manually
-# 1. Download from marketplace
-# 2. In VSCode: Ctrl+Shift+P → "Extensions: Install from VSIX"
-# 3. Select the downloaded .vsix file
+**Method 1: VSCode Marketplace**
+```
+1. Open VSCode Extensions tab (Ctrl+Shift+X)
+2. Search for "MCP Debug Tools"
+3. Click Install
 ```
 
-#### Features
-- DAP message tracking and debugging tools
-- HTTP server (port 8890) for MCP communication
-- Monitoring panel and status bar integration
-- MCP server role for external tools
+**Method 2: Direct Link**
+- [MCP Debug Tools on VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=uhd.mcp-debug-tools)
 
-### 2. CLI Tool (Client)
+### 2. CLI Tool
 
-A command-line tool distributed as an npm package that acts as the MCP client.
+Client that connects AI tools with VSCode.
 
-#### Installation
 ```bash
-# No installation required - runs via npx
-# The tool is automatically downloaded and executed
-```
-
-#### Usage
-```bash
-# Run via npx (automatically downloads and executes)
+# Run directly with npx (no installation needed)
 npx @uhd_kr/mcp-debug-tools
-
-# Auto-discovery mode (default) - automatically finds VSCode instance
-npx @uhd_kr/mcp-debug-tools
-
-# Specify custom port (disables auto-discovery)
-npx @uhd_kr/mcp-debug-tools --port=8891
-
-# Disable auto-discovery, use default port 8890
-npx @uhd_kr/mcp-debug-tools --no-auto
-
-# Show help
-npx @uhd_kr/mcp-debug-tools --help
 ```
 
-##### 🆕 Auto-Discovery Feature
-The CLI tool now automatically discovers and connects to running VSCode instances:
-1. **Workspace Detection**: Searches for `.mcp-debug-tools/config.json` from current directory upward
-2. **Global Registry**: Checks `~/.mcp-debug-tools/active-configs.json` for all active VSCode instances
-3. **Smart Selection**: Automatically selects single instance, or first of multiple instances
-4. **Fallback**: Uses default port 8890 if no instances found
+## 🔧 Configuration
 
-#### MCP Configuration
-Add to your `mcp.json` file:
-```json
-{
-  "mcpServers": {
-    "dap-proxy": {
-      "command": "npx",
-      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8890"],
-      "env": {}
-    }
-  }
-}
-```
+### MCP Setup (Cursor/Windsurf)
 
-#### Features
-- Connects to VSCode extension's HTTP server
-- Acts as MCP client to extension, MCP server to AI tools
-- Provides stdio-based MCP services to Cursor and other AI tools
+Add to `mcp.json` or configuration file:
 
-## 🔄 Architecture
-
-```
-┌─────────────────┐    HTTP     ┌─────────────────┐    stdio    ┌─────────────────┐
-│   VSCode        │ ──────────▶ │   CLI Tool      │ ──────────▶ │   Cursor/AI     │
-│   Extension     │   (8890)    │   (MCP Client)  │             │   (MCP Client)  │
-│   (MCP Server)  │             │   (MCP Server)  │             │                 │
-└─────────────────┘             └─────────────────┘             └─────────────────┘
-```
-
-### Data Flow
-1. **VSCode Extension** → Runs HTTP server (port 8890)
-2. **CLI Tool** → Connects to extension via HTTP client
-3. **CLI Tool** → Provides MCP services to AI tools via stdio
-
-### Dependencies
-- CLI Tool requires VSCode Extension to be running first
-- Extension provides HTTP server, CLI acts as proxy
-
-## 🚀 Use Cases
-
-### 1. VSCode Extension Only
-- Use debugging tools within VSCode
-- Monitor DAP messages through monitoring panel
-- Manage breakpoints and debug sessions
-
-### 2. CLI Tool with Extension
-1. Install and activate VSCode Extension
-2. Configure MCP in your AI tool (e.g., Cursor)
-3. Use debugging capabilities from AI tools via MCP
-
-## 📋 Features
-
-### Tools (Executable Commands)
-
-#### Breakpoint Management
-- `add-breakpoint` - Add breakpoint to specific file and line
-- `remove-breakpoint` - Remove breakpoint from specific file and line
-- `list-breakpoints` - List all breakpoints in workspace
-- `add-breakpoints` - Add multiple breakpoints at once
-- `clear-breakpoints` - Remove all breakpoints or breakpoints from specific files
-
-#### Debug Control
-- `start-debug` - Start debug session with configuration
-- `stop-debug` - Stop active debug session
-- `continue` - Continue execution
-- `step-over` - Step over current line
-- `step-into` - Step into function
-- `step-out` - Step out of function
-- `pause` - Pause execution
-
-#### Variable and Expression Tools
-- `evaluate-expression` - Evaluate expression in debug context
-- `inspect-variable` - Get detailed information about a specific variable
-
-#### Debug Configuration Management
-- `list-debug-configs` - List all available debug configurations from launch.json
-- `select-debug-config` - Select a debug configuration by name
-
-#### Status Queries
-- `get-debug-state` - Get current debug session state
-
-### Resources (Read-only Information)
-
-#### Core Debug Information
-- `dap-log://current` - DAP protocol message log
-- `debug://breakpoints` - Current breakpoint information
-- `debug://active-session` - Active debug session details
-- `debug://console` - Debug console output
-- `debug://active-stack-item` - Current stack frame information
-
-#### Advanced Debug Information
-- `debug://call-stack` - Complete call stack information
-- `debug://variables-scope` - All variables in current scope
-- `debug://thread-list` - All threads in debug session
-- `debug://exception-info` - Exception details and stack trace
-
-### 🆕 Workspace Management Tools
-- `select-vscode-instance` - Select specific VSCode instance to connect to
-- `list-vscode-instances` - List all active VSCode instances with debug proxy
-- `get-workspace-info` - Get information about the current workspace
-
-### New Tools (Latest Additions)
-
-#### Variable Inspection Tools
-- `get-variables-scope` - Retrieve all variables in current scope with detailed information
-- `get-call-stack` - Get complete call stack with frame details
-- `get-thread-list` - Retrieve all threads with their states
-
-#### Debug Session Information
-- `get-dap-log` - Retrieve all DAP protocol messages for analysis
-- `get-active-session` - Get detailed information about the currently active debug session
-- `get-debug-console` - Retrieve recent debug console output with filtering options
-- `get-active-stack-item` - Get currently focused thread or stack frame information
-
-#### Exception Handling
-- `get-exception-info` - Retrieve exception details and stack trace with comprehensive error information
-
-#### Enhanced Breakpoint Management
-- `get-breakpoints` - Retrieve all current breakpoints with detailed properties (condition, hitCondition, logMessage)
-
-## 🔧 Technical Details
-
-### 🆕 Automatic Connection System
-The system now features an automatic connection mechanism between VSCode Extension and CLI Tool:
-
-#### Configuration File Management
-- **Workspace Config**: `.mcp-debug-tools/config.json` - stores VSCode instance connection info
-- **Global Registry**: `~/.mcp-debug-tools/active-configs.json` - tracks all active VSCode instances
-- **Heartbeat System**: 5-second interval updates ensure instance liveness
-- **PID Verification**: Process existence check for accurate instance status
-
-#### Auto-Discovery Process
-1. CLI searches for workspace config from current directory upward
-2. Falls back to global registry if workspace config not found
-3. Automatically selects appropriate VSCode instance
-4. Connects directly without manual port specification
-
-### MCP Protocol Integration
-- Uses Model Context Protocol for AI tool communication
-- HTTP-based transport between extension and CLI
-- stdio-based transport between CLI and AI tools
-- Workspace-aware tools for multi-instance support
-
-### DAP Protocol Support
-- Tracks Debug Adapter Protocol messages
-- Provides debugging capabilities through DAP
-- Supports multiple debugger types
-
-### Architecture Components
-- **Extension**: VSCode extension with HTTP server
-- **CLI**: Standalone tool with MCP client/server
-- **State Management**: Global state for sessions and messages
-- **Tools**: MCP tools for debugging operations
-- **Resources**: MCP resources for debugging information
-
-## ⚠️ Important Notes
-
-### Prerequisites
-1. **CLI Tool Usage**: VSCode Extension must be running first
-2. **Port Conflicts**: Default port 8890, ensure no conflicts
-3. **Dependencies**: CLI Tool depends on Extension's HTTP server
-
-### Current Limitations
-- **Single Session Support**: Only one debugging session per server is supported (multi-session support planned)
-- **VSCode Debug API limitations**: High-level API only
-- **DAP message parsing**: Read-only, no direct transmission
-- **Real-time synchronization**: Constraints due to MCP protocol
-- **Debugger-specific features**: Depend on individual debugger support
-
-### Security Considerations
-- HTTP server runs on localhost only
-- No authentication required for local development
-- DNS rebinding protection disabled for local use
-
-## 📝 Configuration
-
-### Extension Settings
-- Server port configuration (default: 8890)
-- Logging level settings
-- Panel update frequency
-
-### CLI Tool Options
-- `--port=<number>` - Specify server port (disables auto-discovery)
-- `--no-auto` - Disable auto-discovery, use default port 8890
-- `--domain=<url>` - Specify server domain
-- `--help, -h` - Show help information
-
-### MCP Configuration
-For AI tools like Cursor, add to your `mcp.json`:
-```json
-{
-  "mcpServers": {
-    "dap-proxy": {
-      "command": "npx",
-      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8890"],
-      "env": {}
-    }
-  }
-}
-```
-
-### Multiple VSCode Instances Support
-The system now supports multiple VSCode instances through automatic discovery:
-
-#### Automatic Mode (Recommended)
 ```json
 {
   "mcpServers": {
@@ -304,119 +64,137 @@ The system now supports multiple VSCode instances through automatic discovery:
   }
 }
 ```
-The CLI will automatically find and connect to the appropriate VSCode instance based on your current workspace.
 
-#### Manual Mode (Specific Port)
-```json
-{
-  "mcpServers": {
-    "dap-proxy": {
-      "command": "npx",
-      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8891"],
-      "env": {}
-    }
-  }
-}
+### CLI Options
+
+```bash
+# Auto-connect (recommended)
+npx @uhd_kr/mcp-debug-tools
+
+# Specify port
+npx @uhd_kr/mcp-debug-tools --port=8891
+
+# Disable auto-discovery
+npx @uhd_kr/mcp-debug-tools --no-auto
 ```
+
+## 🛠️ Supported Features
+
+### MCP Tools (Executable Commands)
+
+#### Breakpoint Management
+- `add-breakpoint` - Add breakpoint with conditional support
+- `add-breakpoints` - Add multiple breakpoints at once
+- `remove-breakpoint` - Remove specific breakpoint
+- `clear-breakpoints` - Clear all/specific file breakpoints
+- `list-breakpoints` - List all breakpoints
+
+#### Debug Control
+- `start-debug` - Start debug session
+- `stop-debug` - Stop debug session
+- `continue` - Continue execution
+- `step-over` - Step over line
+- `step-into` - Step into function
+- `step-out` - Step out of function
+- `pause` - Pause execution
+
+#### State Inspection
+- `get-debug-state` - Debug session state
+- `evaluate-expression` - Evaluate expression
+- `inspect-variable` - Variable details
+- `get-variables-scope` - All variables in scope
+- `get-call-stack` - Call stack information
+- `get-thread-list` - Thread list
+- `get-exception-info` - Exception information
+
+#### Configuration Management
+- `list-debug-configs` - List launch.json configurations
+- `select-debug-config` - Select debug configuration
+
+#### Workspace Management
+- `select-vscode-instance` - Select VSCode instance
+- `list-vscode-instances` - List active instances
+- `get-workspace-info` - Workspace information
+
+### MCP Resources (Read-only Information)
+
+- `dap-log://current` - DAP protocol message log
+- `debug://breakpoints` - Current breakpoint information
+- `debug://active-session` - Active debug session info
+- `debug://console` - Debug console output
+- `debug://call-stack` - Call stack information
+- `debug://variables-scope` - Variable scope information
+
+## 🏗️ Architecture
+
+```
+┌─────────────┐    HTTP    ┌─────────────┐    stdio   ┌─────────────┐
+│   VSCode    │ ◄────────► │  CLI Tool   │ ◄────────► │ AI Tool     │
+│  Extension  │   (8890)   │             │            │ (Cursor)    │
+└─────────────┘            └─────────────┘            └─────────────┘
+```
+
+### Auto-Connection Mechanism
+
+1. **Workspace Config**: `.mcp-debug-tools/config.json` - Stores VSCode connection info
+2. **Global Registry**: `~/.mcp-debug-tools/active-configs.json` - Tracks all active instances
+3. **Heartbeat**: 5-second interval liveness updates
+4. **PID Verification**: Process status checking
 
 ## 🚀 Getting Started
 
-### Quick Start
-1. Install VSCode Extension from Marketplace
-2. Activate extension in VSCode
-3. Configure MCP in your AI tool (e.g., Cursor)
-4. Use debugging features from AI tools via MCP
+1. Install VSCode Extension
+2. Open project in VSCode
+3. Add to AI tool's MCP configuration
+4. Use debugging commands in AI tool
 
-## 📊 Performance Considerations
+## 📊 Current Limitations
 
-### Memory Management
-- DAP message accumulation disabled to prevent memory leaks
-- Session cleanup on transport close
-- Automatic garbage collection for old messages
+- Single debug session only (multi-session support planned)
+- Some advanced features limited by VSCode Debug API
+- DAP messages are read-only
+- Real-time sync limited by MCP protocol constraints
 
-### Scalability
-- Multiple session support
-- Concurrent transport handling
-- Efficient message parsing
+## 🔮 Future Plans
 
-## 🔮 Future Enhancements
-
-### Recently Implemented Features ✅
-- **Automatic Connection System**: CLI automatically discovers and connects to VSCode instances
-- **Workspace-based Configuration**: Each workspace maintains its own connection configuration
-- **Global Registry**: Tracks all active VSCode instances across the system
-- **Multiple VSCode Support**: Work with multiple VSCode windows simultaneously
-- **Heartbeat System**: Ensures connection reliability with periodic liveness checks
-- **PID Verification**: Accurate process status detection
-
-### Planned Features
-- **Multi-Session Debugging**: Support for multiple debugging sessions on a single server
-- **Customizable Data Structures**: Unified tool integration to reduce frequent tool calls
-- Variable inspection and modification
-- Call stack analysis
-- Thread management
-- Exception handling
-- Module information
+### Short-term
+- Multiple debug session support
 - Watch expressions
+- Memory viewer
+- Module information
 
-### Architecture Improvements
-- WebSocket support for real-time updates
-- Enhanced error handling
-- Better session management
-- Performance optimizations
+### Long-term
+- WebSocket real-time updates
+- Custom debugger adapter support
+- Remote debugging
+- Performance profiling tools
 
-*These features are expected to significantly improve the debugging experience and tool efficiency.*
+## 🐛 Troubleshooting
+
+### CLI Can't Find VSCode
+1. Verify VSCode Extension is active
+2. Check `.mcp-debug-tools/config.json` exists
+3. Try manual connection with `--port` option
+
+### Multiple VSCode Windows
+- CLI auto-selects based on current directory
+- Use `list-vscode-instances` to check active instances
+- Use `select-vscode-instance` to choose specific instance
 
 ## 📄 License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](https://github.com/hwanyong/mcp-debug-tools/blob/main/LICENSE) file for details.
-
-**Key Terms:**
-- ✅ **Free to use, modify, and distribute**
-- ✅ **Source code must be shared when distributing modified versions**
-- ✅ **Commercial use allowed with source code sharing**
-- ✅ **Network use (web services) also requires source code sharing**
-
-For more information about GPL v3, visit: https://www.gnu.org/licenses/gpl-3.0.html
+GNU General Public License v3.0 - [LICENSE](https://github.com/hwanyong/mcp-debug-tools/blob/main/LICENSE)
 
 ## 🤝 Contributing
 
-We welcome contributions! Please feel free to submit issues and pull requests.
+Issues and Pull Requests welcome!
 
-## 📚 Documentation
+## 📚 References
 
-- [VSCode Extension API](https://code.visualstudio.com/api/references/vscode-api#debug)
 - [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/)
-- [MCP Specification](https://modelcontextprotocol.io/)
-
-## 🐛 Known Issues
-
-- Some DAP features require custom request API (not yet available)
-- Real-time updates limited by MCP protocol constraints
-- Debugger-specific features depend on individual debugger support
-- Auto-discovery may not work properly if workspace config is corrupted
-
-## 🔍 Troubleshooting
-
-### CLI Cannot Find VSCode Instance
-1. Ensure VSCode Extension is running and activated
-2. Check if `.mcp-debug-tools/config.json` exists in workspace
-3. Verify heartbeat is updating (should be < 15 seconds old)
-4. Try manual connection with `--port` option
-
-### Multiple VSCode Windows
-- CLI automatically selects based on current directory
-- Use workspace-specific tools to manage multiple instances
-- Check active instances with `list-vscode-instances` tool
-
-## 📞 Support
-
-For issues and questions:
-- Create GitHub issue
-- Check existing documentation
-- Review implementation plan in `/docs` folder
-- **Contact:** [yoo.hwanyong@gmail.com](mailto:yoo.hwanyong@gmail.com)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [VSCode Extension API](https://code.visualstudio.com/api)
 
 ---
 
-**Enjoy debugging with MCP!**
+**Enjoy debugging with AI! 🚀**
