@@ -68,12 +68,25 @@ A command-line tool distributed as an npm package that acts as the MCP client.
 # Run via npx (automatically downloads and executes)
 npx @uhd_kr/mcp-debug-tools
 
-# Specify custom port
+# Auto-discovery mode (default) - automatically finds VSCode instance
+npx @uhd_kr/mcp-debug-tools
+
+# Specify custom port (disables auto-discovery)
 npx @uhd_kr/mcp-debug-tools --port=8891
+
+# Disable auto-discovery, use default port 8890
+npx @uhd_kr/mcp-debug-tools --no-auto
 
 # Show help
 npx @uhd_kr/mcp-debug-tools --help
 ```
+
+##### 🆕 Auto-Discovery Feature
+The CLI tool now automatically discovers and connects to running VSCode instances:
+1. **Workspace Detection**: Searches for `.mcp-debug-tools/config.json` from current directory upward
+2. **Global Registry**: Checks `~/.mcp-debug-tools/active-configs.json` for all active VSCode instances
+3. **Smart Selection**: Automatically selects single instance, or first of multiple instances
+4. **Fallback**: Uses default port 8890 if no instances found
 
 #### MCP Configuration
 Add to your `mcp.json` file:
@@ -171,6 +184,11 @@ Add to your `mcp.json` file:
 - `debug://thread-list` - All threads in debug session
 - `debug://exception-info` - Exception details and stack trace
 
+### 🆕 Workspace Management Tools
+- `select-vscode-instance` - Select specific VSCode instance to connect to
+- `list-vscode-instances` - List all active VSCode instances with debug proxy
+- `get-workspace-info` - Get information about the current workspace
+
 ### New Tools (Latest Additions)
 
 #### Variable Inspection Tools
@@ -192,10 +210,26 @@ Add to your `mcp.json` file:
 
 ## 🔧 Technical Details
 
+### 🆕 Automatic Connection System
+The system now features an automatic connection mechanism between VSCode Extension and CLI Tool:
+
+#### Configuration File Management
+- **Workspace Config**: `.mcp-debug-tools/config.json` - stores VSCode instance connection info
+- **Global Registry**: `~/.mcp-debug-tools/active-configs.json` - tracks all active VSCode instances
+- **Heartbeat System**: 5-second interval updates ensure instance liveness
+- **PID Verification**: Process existence check for accurate instance status
+
+#### Auto-Discovery Process
+1. CLI searches for workspace config from current directory upward
+2. Falls back to global registry if workspace config not found
+3. Automatically selects appropriate VSCode instance
+4. Connects directly without manual port specification
+
 ### MCP Protocol Integration
 - Uses Model Context Protocol for AI tool communication
 - HTTP-based transport between extension and CLI
 - stdio-based transport between CLI and AI tools
+- Workspace-aware tools for multi-instance support
 
 ### DAP Protocol Support
 - Tracks Debug Adapter Protocol messages
@@ -217,8 +251,7 @@ Add to your `mcp.json` file:
 3. **Dependencies**: CLI Tool depends on Extension's HTTP server
 
 ### Current Limitations
-- **Single Session Support**: Only one debugging session per server is supported
-- **Multiple Sessions**: For multiple simultaneous debugging sessions, you need to change the port in MCP configuration
+- **Single Session Support**: Only one debugging session per server is supported (multi-session support planned)
 - **VSCode Debug API limitations**: High-level API only
 - **DAP message parsing**: Read-only, no direct transmission
 - **Real-time synchronization**: Constraints due to MCP protocol
@@ -237,7 +270,8 @@ Add to your `mcp.json` file:
 - Panel update frequency
 
 ### CLI Tool Options
-- `--port=<number>` - Specify server port
+- `--port=<number>` - Specify server port (disables auto-discovery)
+- `--no-auto` - Disable auto-discovery, use default port 8890
 - `--domain=<url>` - Specify server domain
 - `--help, -h` - Show help information
 
@@ -255,14 +289,30 @@ For AI tools like Cursor, add to your `mcp.json`:
 }
 ```
 
-### Multiple Debugging Sessions
-To run multiple debugging sessions simultaneously, modify your MCP configuration with different ports:
+### Multiple VSCode Instances Support
+The system now supports multiple VSCode instances through automatic discovery:
+
+#### Automatic Mode (Recommended)
 ```json
 {
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8891"], // other port
+      "args": ["-y", "@uhd_kr/mcp-debug-tools"],
+      "env": {}
+    }
+  }
+}
+```
+The CLI will automatically find and connect to the appropriate VSCode instance based on your current workspace.
+
+#### Manual Mode (Specific Port)
+```json
+{
+  "mcpServers": {
+    "dap-proxy": {
+      "command": "npx",
+      "args": ["-y", "@uhd_kr/mcp-debug-tools", "--port=8891"],
       "env": {}
     }
   }
@@ -291,9 +341,17 @@ To run multiple debugging sessions simultaneously, modify your MCP configuration
 
 ## 🔮 Future Enhancements
 
+### Recently Implemented Features ✅
+- **Automatic Connection System**: CLI automatically discovers and connects to VSCode instances
+- **Workspace-based Configuration**: Each workspace maintains its own connection configuration
+- **Global Registry**: Tracks all active VSCode instances across the system
+- **Multiple VSCode Support**: Work with multiple VSCode windows simultaneously
+- **Heartbeat System**: Ensures connection reliability with periodic liveness checks
+- **PID Verification**: Accurate process status detection
+
 ### Planned Features
-- **Multi-Session Support**: Support for multiple debugging sessions on a single server - This will allow you to debug multiple applications simultaneously without needing separate MCP configurations
-- **Customizable Data Structures**: Unified tool integration to reduce frequent tool calls - This feature will consolidate multiple tools into one, optimizing performance and reducing the overhead of multiple tool invocations
+- **Multi-Session Debugging**: Support for multiple debugging sessions on a single server
+- **Customizable Data Structures**: Unified tool integration to reduce frequent tool calls
 - Variable inspection and modification
 - Call stack analysis
 - Thread management
@@ -336,6 +394,20 @@ We welcome contributions! Please feel free to submit issues and pull requests.
 - Some DAP features require custom request API (not yet available)
 - Real-time updates limited by MCP protocol constraints
 - Debugger-specific features depend on individual debugger support
+- Auto-discovery may not work properly if workspace config is corrupted
+
+## 🔍 Troubleshooting
+
+### CLI Cannot Find VSCode Instance
+1. Ensure VSCode Extension is running and activated
+2. Check if `.mcp-debug-tools/config.json` exists in workspace
+3. Verify heartbeat is updating (should be < 15 seconds old)
+4. Try manual connection with `--port` option
+
+### Multiple VSCode Windows
+- CLI automatically selects based on current directory
+- Use workspace-specific tools to manage multiple instances
+- Check active instances with `list-vscode-instances` tool
 
 ## 📞 Support
 
