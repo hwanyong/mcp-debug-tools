@@ -38,6 +38,9 @@ Provides debugging capabilities as a server in VSCode.
 **Method 2: Direct Link**
 - [MCP Debug Tools on VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=uhd.mcp-debug-tools)
 
+**Method 3: Download Link**
+- [Releases](https://github.com/hwanyong/mcp-debug-tools/releases)
+
 ### 2. CLI Tool
 
 Client that connects AI tools with VSCode.
@@ -228,24 +231,71 @@ The AI will:
 - Trace back to the source of discrepancy
 - Suggest test or code fixes
 
-## 📊 Current Limitations
+## 🤖 AI Agent Integration Guide
 
-- Single debug session only (multi-session support planned)
-- Some advanced features limited by VSCode Debug API
-- DAP messages are read-only
+### Using MCP Debug Tools with AI Assistants
+
+For AI developers and users who want to leverage MCP Debug Tools in their AI-powered development workflows, we provide a comprehensive rules document that helps AI agents use these debugging tools effectively.
+
+#### MCP_DEBUG_TOOLS_RULES.md
+
+This document contains essential guidelines and patterns for AI agents to:
+- Understand the proper sequence of debugging operations
+- Handle common debugging scenarios efficiently
+- Recover from errors gracefully
+- Follow best practices for performance and safety
+
+#### How to Use
+
+1. **For AI Tool Users (Cursor, Windsurf, etc.)**
+   - Include the rules document in your AI assistant's context when debugging
+   - Copy relevant sections from [`MCP_DEBUG_TOOLS_RULES.md`](./MCP_DEBUG_TOOLS_RULES.md) into your prompts
+   - Example prompt:
+     ```
+     I need to debug my Node.js application. Please follow the MCP Debug Tools
+     rules for proper tool sequencing and error handling.
+     [Paste relevant sections from MCP_DEBUG_TOOLS_RULES.md]
+     ```
+
+2. **For Custom AI Agent Development**
+   - Use the rules document as a reference for implementing debugging workflows
+   - Incorporate the sequential operation patterns into your agent's logic
+   - Follow the error recovery strategies for robust debugging automation
+
+3. **Key Sections to Reference**
+   - **Prerequisites Check**: Ensure environment is ready before debugging
+   - **Tool Categories**: Understand the 5 main tool categories and their purposes
+   - **Sequential Operations**: Follow the proper order of debugging operations
+   - **Common Workflows**: Pre-built patterns for typical debugging scenarios
+   - **Error Recovery**: Handle failures and recover gracefully
+
+#### Benefits of Following the Rules
+
+- ✅ **Reduced Errors**: Proper tool sequencing prevents common mistakes
+- ✅ **Efficient Debugging**: Optimized workflows save time and resources
+- ✅ **Better AI Assistance**: AI can provide more accurate debugging help
+- ✅ **Consistent Results**: Standardized patterns ensure reliable outcomes
+
+#### Example AI-Assisted Debugging Session
+
+```
+User: "Help me find why my function returns undefined"
+
+AI (using rules):
+1. First, I'll check available VSCode instances (list-vscode-instances)
+2. Set a breakpoint at the function start (add-breakpoint)
+3. Start debug session (start-debug)
+4. When paused, inspect all variables (get-variables-scope)
+5. Step through to find where undefined is introduced (step-over)
+6. Suggest the fix based on findings
+```
+
+For the complete rules and patterns, see [`MCP_DEBUG_TOOLS_RULES.md`](./MCP_DEBUG_TOOLS_RULES.md)
+
+## 📊 Current Limitations
 - Real-time sync limited by MCP protocol constraints
 
 ## 🔮 Future Plans
-
-### Short-term
-- Multiple debug session support
-- Watch expressions
-- Memory viewer
-- Module information
-
-### Long-term
-- WebSocket real-time updates
-- Custom debugger adapter support
 - Remote debugging
 - Performance profiling tools
 
