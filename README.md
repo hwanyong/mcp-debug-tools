@@ -148,6 +148,86 @@ npx @uhd_kr/mcp-debug-tools --no-auto
 3. Add to AI tool's MCP configuration
 4. Use debugging commands in AI tool
 
+## 💡 Common Use Cases
+
+### 1. Finding and Fixing Bugs
+Ask your AI assistant to help debug your code:
+```
+"There's an error in my calculateTotal function. Can you set breakpoints
+at the start of the function and step through to find the issue?"
+```
+The AI will:
+- Set breakpoints in the problematic function
+- Start debug session
+- Step through code line by line
+- Inspect variables to identify the bug
+- Suggest fixes based on the debugging data
+
+### 2. Understanding Complex Code Flow
+When exploring unfamiliar codebases:
+```
+"I need to understand how the authentication flow works. Can you trace
+through the login process step by step?"
+```
+The AI will:
+- Identify key authentication functions
+- Set strategic breakpoints
+- Run through the authentication flow
+- Explain each step with actual runtime data
+- Show how data transforms through the process
+
+### 3. Validating Data Processing
+For data transformation pipelines:
+```
+"Please verify that my data transformation pipeline correctly processes
+the input array and produces the expected output format"
+```
+The AI will:
+- Set breakpoints at transformation stages
+- Inspect input data structure
+- Monitor data changes at each step
+- Validate output against requirements
+- Identify any data integrity issues
+
+### 4. Performance Bottleneck Detection
+Finding performance issues:
+```
+"My application is running slowly. Can you help identify which functions
+are taking the most time during execution?"
+```
+The AI will:
+- Set breakpoints at function entry/exit points
+- Monitor execution flow
+- Identify functions called frequently
+- Suggest optimization opportunities
+- Highlight potential bottlenecks
+
+### 5. Exception Handling Analysis
+Debugging runtime errors:
+```
+"My app crashes with an unhandled exception. Can you catch it and show
+me the exact state when it occurs?"
+```
+The AI will:
+- Monitor for exceptions
+- Capture exception details and stack trace
+- Show variable states at crash point
+- Analyze the root cause
+- Suggest error handling improvements
+
+### 6. Test-Driven Debugging
+Debugging failing tests:
+```
+"My unit test is failing. Can you debug the test execution and show me
+why the assertion fails?"
+```
+The AI will:
+- Run tests in debug mode
+- Break at test assertions
+- Compare expected vs actual values
+- Trace back to the source of discrepancy
+- Suggest test or code fixes
+
 ## 📊 Current Limitations
 
 - Single debug session only (multi-session support planned)
