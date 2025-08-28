@@ -6,7 +6,9 @@ A bridge solution that enables AI tools (Cursor, Windsurf, etc.) to access VSCod
 
 Watch how MCP Debug Tools enables AI assistants to perform complex debugging tasks across multiple Node.js projects simultaneously. This demonstration showcases real-time variable inspection, multi-threaded debugging, and automated breakpoint management through natural language commands.
 
+\[Loading...GIF\]
 [![MCP Debug Tools Demo](https://github.com/hwanyong/mcp-debug-tools/blob/main/docs/resources/Area_x24.gif)](https://www.youtube.com/watch?v=0lE4-jZ9hTQ)
+\(click go to Youtube\)
 
 ## ⚠️ Beta Testing
 
