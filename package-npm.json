@@ -2,7 +2,7 @@
   "name": "@uhd_kr/mcp-debug-tools",
   "displayName": "MCP Debug Tools",
   "description": "VSCode extension and CLI tool for MCP-based debugging with DAP protocol support",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "author": "Hwanyong Yoo",
   "license": "GPL-3.0",
   "icon": "icon.png",
@@ -29,9 +29,7 @@
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
-  "bin": {
-    "dap-proxy-mcp": "./out/cli.js"
-  },
+  "bin": "./out/cli.js",
   "files": [
     "out/**/*",
     "README.md",
