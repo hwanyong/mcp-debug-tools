@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "release-dap-proxy": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@uhd_kr/mcp-debug-tools"
+      ],
+      "env": {},
+      "disabled": false,
+      "alwaysAllow": [
+        "add-breakpoints"
+      ]
+    }
+  }
+}

@@ -9,7 +9,7 @@ cp package-vscode.json package.json
 npm run compile
 
 # VSCode Extension 패키징
-npx @vscode/vsce package
+npx @vscode/vsce publish
 
 echo "✅ VSCode Extension 패키징 완료!"
 echo "📦 .vsix 파일이 생성되었습니다."

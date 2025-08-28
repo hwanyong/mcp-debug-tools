@@ -6,5 +6,7 @@ node_modules
 .DS_Store
 .env*
 
+__hidden*
+
 # MCP Debug Tools 로컬 설정
 .mcp-debug-tools/
