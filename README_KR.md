@@ -2,6 +2,12 @@
 
 AI 도구(Cursor, Windsurf 등)가 VSCode의 디버깅 기능에 접근할 수 있도록 하는 브리지 솔루션입니다. Model Context Protocol (MCP)과 Debug Adapter Protocol (DAP)을 연결하여 AI가 디버깅 작업을 수행할 수 있게 합니다.
 
+## 📺 데모 비디오: AI 기반 디버깅 시연
+
+MCP Debug Tools가 AI 어시스턴트를 통해 여러 Node.js 프로젝트를 동시에 복잡한 디버깅 작업을 수행하는 모습을 확인하세요. 이 시연은 자연어 명령을 통한 실시간 변수 검사, 멀티스레드 디버깅, 자동화된 브레이크포인트 관리를 보여줍니다.
+
+[![MCP Debug Tools Demo](https://github.com/hwanyong/mcp-debug-tools/blob/main/docs/resources/Area_x24.gif)](https://www.youtube.com/watch?v=0lE4-jZ9hTQ)
+
 ## ⚠️ 베타 테스트
 
 현재 베타 테스트 중입니다. 문제나 피드백이 있으시면 알려주세요.

@@ -2,6 +2,12 @@
 
 A bridge solution that enables AI tools (Cursor, Windsurf, etc.) to access VSCode's debugging capabilities. Connects Model Context Protocol (MCP) with Debug Adapter Protocol (DAP) to allow AI to perform debugging tasks.
 
+## 📺 Demo Video: AI-Powered Debugging in Action
+
+Watch how MCP Debug Tools enables AI assistants to perform complex debugging tasks across multiple Node.js projects simultaneously. This demonstration showcases real-time variable inspection, multi-threaded debugging, and automated breakpoint management through natural language commands.
+
+[![MCP Debug Tools Demo](https://github.com/hwanyong/mcp-debug-tools/blob/main/docs/resources/Area_x24.gif)](https://www.youtube.com/watch?v=0lE4-jZ9hTQ)
+
 ## ⚠️ Beta Testing
 
 Currently in beta testing. Please report any issues or feedback.
