@@ -1,5 +1,19 @@
 # MCP Debug Tools
 
+## 🔔 Important Notices
+
+### 1. Timeout Error Fix (v0.2.0+)
+Fixed the timeout issue that occurred when starting the debug session. The connection to VSCode instances is now more stable with improved heartbeat and retry mechanisms.
+
+### 2. Use `@latest` Tag for Installation
+When configuring MCP, always include the `@latest` tag to ensure you're using the most recent version:
+```json
+"args": [
+  "-y",
+  "@uhd_kr/mcp-debug-tools@latest"
+],
+```
+
 A bridge solution that enables AI tools (Cursor, Windsurf, etc.) to access VSCode's debugging capabilities. Connects Model Context Protocol (MCP) with Debug Adapter Protocol (DAP) to allow AI to perform debugging tasks.
 
 ## 📺 Demo Video: AI-Powered Debugging in Action
@@ -69,7 +83,7 @@ Add to `mcp.json` or configuration file:
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@uhd_kr/mcp-debug-tools"],
+      "args": ["-y", "@uhd_kr/mcp-debug-tools@latest"],
       "env": {}
     }
   }

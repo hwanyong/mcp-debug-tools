@@ -1,5 +1,19 @@
 # MCP Debug Tools
 
+## 🔔 중요 공지사항
+
+### 1. 타임아웃 오류 수정 (v0.2.0+)
+디버그 세션 시작 시 발생하던 타임아웃 문제가 수정되었습니다. 개선된 하트비트와 재시도 메커니즘으로 VSCode 인스턴스 연결이 더욱 안정적으로 작동합니다.
+
+### 2. `@latest` 태그 사용 안내
+MCP 설정 시 항상 `@latest` 태그를 포함하여 최신 버전을 사용하도록 설정하세요:
+```json
+"args": [
+  "-y",
+  "@uhd_kr/mcp-debug-tools@latest"
+],
+```
+
 AI 도구(Cursor, Windsurf 등)가 VSCode의 디버깅 기능에 접근할 수 있도록 하는 브리지 솔루션입니다. Model Context Protocol (MCP)과 Debug Adapter Protocol (DAP)을 연결하여 AI가 디버깅 작업을 수행할 수 있게 합니다.
 
 ## 📺 데모 비디오: AI 기반 디버깅 시연
@@ -67,7 +81,7 @@ npx @uhd_kr/mcp-debug-tools
   "mcpServers": {
     "dap-proxy": {
       "command": "npx",
-      "args": ["-y", "@uhd_kr/mcp-debug-tools"],
+      "args": ["-y", "@uhd_kr/mcp-debug-tools@latest"],
       "env": {}
     }
   }
