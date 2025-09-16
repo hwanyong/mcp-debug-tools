@@ -22,10 +22,14 @@ export const addBreakpointTool = {
         const { file, line, condition, hitCondition, logMessage } = args
         const tmpLogMessage = null
         
+        console.log(`[DEBUG] addBreakpoint 시작: ${file}:${line}`)
+        const startTime = Date.now()
+        
         try {
             const uri = vscode.Uri.file(path.join(getWorkspaceRoot(), file))
             const location = new vscode.Location(uri, new vscode.Position(line - 1, 0))
             
+            console.log(`[DEBUG] 브레이크포인트 생성 중...`)
             // 브레이크포인트 생성
             const breakpoint = new vscode.SourceBreakpoint(location)
             
@@ -42,7 +46,20 @@ export const addBreakpointTool = {
             //     (breakpoint as any).logMessage = logMessage
             // }
             
-            vscode.debug.addBreakpoints([breakpoint])
+            console.log(`[DEBUG] VSCode API 호출 전: vscode.debug.addBreakpoints`)
+            
+            // 타임아웃 설정 (10초)
+            const addBreakpointPromise = vscode.debug.addBreakpoints([breakpoint])
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => {
+                    reject(new Error('VSCode addBreakpoints API timed out after 10 seconds'))
+                }, 10000)
+            })
+            
+            await Promise.race([addBreakpointPromise, timeoutPromise])
+            
+            const duration = Date.now() - startTime
+            console.log(`[DEBUG] 브레이크포인트 추가 완료 (${duration}ms)`)
             
             const result = {
                 file: file,
@@ -188,6 +205,9 @@ export const clearBreakpointsTool = {
         inputSchema: inputSchemas['clear-breakpoints']
     },
     handler: async (args: any) => {
+        const startTime = Date.now()
+        console.error(`🔧 [clear-breakpoints] 핸들러 시작`)
+        
         const { files } = args as { files?: string[] }
         
         try {
@@ -196,14 +216,20 @@ export const clearBreakpointsTool = {
             if (files && files.length > 0) {
                 // 특정 파일들의 브레이크포인트만 제거
                 const uris = files.map(file => vscode.Uri.file(path.join(getWorkspaceRoot(), file)))
-                breakpoints = vscode.debug.breakpoints.filter(bp => 
+                breakpoints = vscode.debug.breakpoints.filter(bp =>
                     bp instanceof vscode.SourceBreakpoint &&
                     uris.some(uri => bp.location.uri.fsPath === uri.fsPath)
                 )
                 
                 if (breakpoints.length > 0) {
+                    console.error(`⏳ [clear-breakpoints] VSCode API 호출 전`)
                     vscode.debug.removeBreakpoints(breakpoints)
-                    return { content: [{ type: 'text' as const, text: `Cleared ${breakpoints.length} breakpoint(s) from ${files.length} file(s): ${files.join(', ')}` }] }
+                    const elapsed = Date.now() - startTime
+                    console.error(`✅ [clear-breakpoints] VSCode API 호출 완료 (${elapsed}ms)`)
+                    
+                    const result = { content: [{ type: 'text' as const, text: `Cleared ${breakpoints.length} breakpoint(s) from ${files.length} file(s): ${files.join(', ')}` }] }
+                    console.error(`📤 [clear-breakpoints] 결과 반환`)
+                    return result
                 }
                 return { content: [{ type: 'text' as const, text: `No breakpoints found in specified files: ${files.join(', ')}` }] }
             } else {
@@ -211,15 +237,23 @@ export const clearBreakpointsTool = {
                 breakpoints = vscode.debug.breakpoints.filter(bp => bp instanceof vscode.SourceBreakpoint)
                 
                 if (breakpoints.length > 0) {
+                    console.error(`⏳ [clear-breakpoints] VSCode API 호출 전`)
                     vscode.debug.removeBreakpoints(breakpoints)
-                    return { content: [{ type: 'text' as const, text: `Cleared ${breakpoints.length} breakpoint(s) from all files` }] }
+                    const elapsed = Date.now() - startTime
+                    console.error(`✅ [clear-breakpoints] VSCode API 호출 완료 (${elapsed}ms)`)
+                    
+                    const result = { content: [{ type: 'text' as const, text: `Cleared ${breakpoints.length} breakpoint(s) from all files` }] }
+                    console.error(`📤 [clear-breakpoints] 결과 반환`)
+                    return result
                 }
                 return { content: [{ type: 'text' as const, text: 'No breakpoints to clear' }] }
             }
         } catch (error: any) {
-            return { 
+            const elapsed = Date.now() - startTime
+            console.error(`❌ [clear-breakpoints] 오류 (${elapsed}ms):`, error)
+            return {
                 content: [{ type: 'text' as const, text: `Error: ${error.message}` }],
-                isError: true 
+                isError: true
             }
         }
     }
@@ -851,10 +885,14 @@ export const getDapLogTool = {
     },
     handler: async (args: any) => {
         try {
+            // DAP 메시지 수집이 비활성화됨
             return {
                 content: [{
                     type: 'text' as const,
-                    text: JSON.stringify(state.dapMessages, null, 2)
+                    text: JSON.stringify({
+                        message: 'DAP message collection is disabled for performance optimization',
+                        messages: []
+                    }, null, 2)
                 }]
             }
         } catch (error: any) {
@@ -960,34 +998,12 @@ export const getDebugConsoleTool = {
     handler: async (args: any) => {
         try {
             const { limit, filter } = args
-            const outputMessages: string[] = []
             
-            for (const msgStr of state.dapMessages) {
-                try {
-                    const jsonStart = msgStr.indexOf('{')
-                    if (jsonStart === -1) continue
-                    
-                    const jsonStr = msgStr.substring(jsonStart)
-                    const msg = parseJsonWithComments(jsonStr)
-                    
-                    if (msg.type === 'event' && msg.event === 'output' && msg.body?.output) {
-                        const output = msg.body.output
-                        if (!filter || output.includes(filter)) {
-                            outputMessages.push(output)
-                        }
-                    }
-                } catch (e) {
-                    // JSON 파싱 실패 시 무시
-                }
-            }
-            
-            // limit 적용
-            const limitedMessages = limit ? outputMessages.slice(-limit) : outputMessages
-            
+            // DAP 메시지 수집이 비활성화됨
             return {
                 content: [{
                     type: 'text' as const,
-                    text: limitedMessages.length > 0 ? limitedMessages.join('\n') : 'No debug console output available'
+                    text: 'Debug console output collection is disabled for performance optimization'
                 }]
             }
         } catch (error: any) {
@@ -1327,76 +1343,17 @@ export const getExceptionInfoTool = {
                 }
             }
             
-            const exceptionInfo: any[] = []
-            
-            for (let i = state.dapMessages.length - 1; i >= 0; i--) {
-                const msgStr = state.dapMessages[i]
-                
-                try {
-                    const jsonStart = msgStr.indexOf('{')
-                    if (jsonStart === -1) continue
-                    
-                    const jsonStr = msgStr.substring(jsonStart)
-                    const msg = parseJsonWithComments(jsonStr)
-                    
-                    if (msg.type === 'event' && msg.event === 'stopped' && msg.body) {
-                        const reason = msg.body.reason
-                        if (reason === 'exception') {
-                            const exceptionInfo = {
-                                reason: reason,
-                                threadId: msg.body.threadId,
-                                text: msg.body.text,
-                                description: msg.body.description,
-                                allThreadsStopped: msg.body.allThreadsStopped,
-                                timestamp: new Date().toISOString()
-                            }
-                            
-                            return {
-                                content: [{
-                                    type: 'text' as const,
-                                    text: JSON.stringify(exceptionInfo, null, 2)
-                                }]
-                            }
-                        }
-                    }
-                    
-                    if (msg.type === 'event' && msg.event === 'output' && msg.body?.output) {
-                        const output = msg.body.output
-                        if (output.includes('Error:') || output.includes('Exception:') || output.includes('TypeError:') || output.includes('ReferenceError:')) {
-                            exceptionInfo.push({
-                                type: 'output',
-                                message: output.trim(),
-                                timestamp: new Date().toISOString()
-                            })
-                        }
-                    }
-                } catch (e) {
-                    continue
-                }
-            }
-            
-            if (exceptionInfo.length === 0) {
-                return {
-                    content: [{
-                        type: 'text' as const,
-                        text: JSON.stringify({ message: 'No exception information available' }, null, 2)
-                    }]
-                }
-            }
-            
-            const limitedExceptions = limit ? exceptionInfo.slice(-limit) : exceptionInfo
-            
-            const result = {
-                sessionId: session.id,
-                sessionName: session.name,
-                exceptions: limitedExceptions,
-                totalExceptions: limitedExceptions.length
-            }
-            
+            // DAP 메시지 수집이 비활성화되어 예외 정보를 수집할 수 없음
             return {
                 content: [{
                     type: 'text' as const,
-                    text: JSON.stringify(result, null, 2)
+                    text: JSON.stringify({
+                        message: 'Exception information collection is disabled for performance optimization',
+                        sessionId: session.id,
+                        sessionName: session.name,
+                        exceptions: [],
+                        totalExceptions: 0
+                    }, null, 2)
                 }]
             }
         } catch (error: any) {
@@ -1444,12 +1401,11 @@ export const selectVSCodeInstanceTool = {
                     try {
                         const configData = fs.readFileSync(entry.configPath, 'utf8')
                         const config = JSON.parse(configData) as WorkspaceConfig
-                        const age = Date.now() - config.lastHeartbeat
                         
-                        // PID 체크
+                        // PID 체크만 수행
                         try {
                             process.kill(config.pid, 0)
-                            return age < 15000 // 15초 이내
+                            return true // 프로세스가 살아있으면 활성
                         } catch {
                             return false
                         }
@@ -1550,11 +1506,19 @@ export const getWorkspaceInfoTool = {
                 try {
                     const configData = fs.readFileSync(configPath, 'utf8')
                     const config = JSON.parse(configData) as WorkspaceConfig
+                    // PID 체크로 활성 상태 확인
+                    let isAlive = false
+                    try {
+                        process.kill(config.pid, 0)
+                        isAlive = true
+                    } catch {
+                        isAlive = false
+                    }
+                    
                     configInfo = {
                         port: config.port,
                         pid: config.pid,
-                        lastHeartbeat: config.lastHeartbeat,
-                        isAlive: (Date.now() - config.lastHeartbeat) < 10000
+                        isAlive: isAlive
                     }
                 } catch (error) {
                     configInfo = { error: 'Failed to read config file' }
@@ -1624,13 +1588,12 @@ export const listVSCodeInstancesTool = {
                     try {
                         const configData = fs.readFileSync(entry.configPath, 'utf8')
                         const config = JSON.parse(configData) as WorkspaceConfig
-                        const age = Date.now() - config.lastHeartbeat
                         
-                        // PID 체크
+                        // PID 체크만 수행
                         let isAlive = false
                         try {
                             process.kill(config.pid, 0)
-                            isAlive = age < 15000
+                            isAlive = true
                         } catch {
                             isAlive = false
                         }
@@ -1642,8 +1605,6 @@ export const listVSCodeInstancesTool = {
                                 workspacePath: config.workspacePath,
                                 pid: config.pid,
                                 instanceId: config.vscodeInstanceId,
-                                lastHeartbeat: config.lastHeartbeat,
-                                heartbeatAge: `${Math.floor(age / 1000)}s ago`,
                                 status: 'active',
                                 connectionUrl: `http://localhost:${config.port}/mcp`
                             })
@@ -1654,10 +1615,8 @@ export const listVSCodeInstancesTool = {
                                 workspacePath: config.workspacePath,
                                 pid: config.pid,
                                 instanceId: config.vscodeInstanceId,
-                                lastHeartbeat: config.lastHeartbeat,
-                                heartbeatAge: `${Math.floor(age / 1000)}s ago`,
                                 status: 'stale',
-                                reason: age >= 15000 ? 'heartbeat timeout' : 'process not found'
+                                reason: 'process not found'
                             })
                         }
                     } catch (error) {

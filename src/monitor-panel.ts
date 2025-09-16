@@ -73,9 +73,7 @@ function getServerStatus() {
         port: state.currentPort,
         fullUrl: state.currentPort ? `http://localhost:${state.currentPort}` : null,
         startTime: state.serverStartTime?.toLocaleString('en-US'),
-        uptime: state.getUptime(),
-        sessionCount: state.getTransportCount(),
-        messageCount: state.dapMessages.length
+        uptime: state.getUptime()
     }
 }
 
@@ -149,8 +147,6 @@ function getWebviewContent(): string {
     // Format config info for display
     let configInfo = ''
     if (configStatus.exists && configStatus.config) {
-        const age = Date.now() - configStatus.config.lastHeartbeat
-        const isAlive = age < 10000 // 10 seconds
         configInfo = `
             <div class="info-grid">
                 <span class="info-label">Config Path:</span>
@@ -164,9 +160,6 @@ function getWebviewContent(): string {
                 
                 <span class="info-label">PID:</span>
                 <span>${configStatus.config.pid}</span>
-                
-                <span class="info-label">Heartbeat:</span>
-                <span>${isAlive ? '🟢 Active' : '🔴 Stale'} (${Math.floor(age / 1000)}s ago)</span>
             </div>
         `
     } else {
@@ -324,12 +317,6 @@ function getWebviewContent(): string {
                 
                 <span class="info-label">Uptime:</span>
                 <span>${serverStatus.uptime || 'Unknown'}</span>
-                
-                <span class="info-label">Active Sessions:</span>
-                <span>${serverStatus.sessionCount}</span>
-                
-                <span class="info-label">DAP Messages:</span>
-                <span>${serverStatus.messageCount}</span>
             </div>
             
             <div class="section-divider"></div>
@@ -393,9 +380,6 @@ function getWebviewContent(): string {
                 function stopServer() {
                     vscode.postMessage({command: 'stopServer'});
                 }
-                
-                // Auto refresh every 5 seconds
-                setInterval(refresh, 5000);
             </script>
         </body>
         </html>

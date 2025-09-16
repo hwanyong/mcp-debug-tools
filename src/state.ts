@@ -8,7 +8,6 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 class ExtensionState {
     private _mcpServer: McpServer | undefined
     private _httpServer: any
-    private _dapMessages: string[] = []
     private _transports: { [sessionId: string]: StreamableHTTPServerTransport } = {}
     private _currentPort: number | undefined
     private _serverStartTime: Date | undefined
@@ -30,19 +29,6 @@ class ExtensionState {
 
     set httpServer(server: any) {
         this._httpServer = server
-    }
-
-    // DAP Messages
-    get dapMessages(): string[] {
-        return this._dapMessages
-    }
-
-    addDapMessage(message: string) {
-        this._dapMessages.push(message)
-    }
-
-    clearDapMessages() {
-        this._dapMessages = []
     }
 
     // Transports
@@ -122,7 +108,6 @@ class ExtensionState {
     reset() {
         this._mcpServer = undefined
         this._httpServer = undefined
-        this._dapMessages = []
         // 모든 세션 정리
         for (const sessionId in this._transports) {
             console.log(`Cleaning up session: ${sessionId}`)

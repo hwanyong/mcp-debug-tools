@@ -13,11 +13,11 @@ export const dapLogResource = {
         mimeType: 'application/json'
     },
     handler: async (uri: URL) => {
-        return { 
-            contents: [{ 
-                uri: uri.href, 
-                text: JSON.stringify(state.dapMessages, null, 2) 
-            }] 
+        return {
+            contents: [{
+                uri: uri.href,
+                text: JSON.stringify([], null, 2)  // DAP messages no longer tracked
+            }]
         }
     }
 }
@@ -103,31 +103,12 @@ export const debugConsoleResource = {
         mimeType: 'text/plain'
     },
     handler: async (uri: URL) => {
-        // DAP 메시지에서 output 이벤트 필터링
-        const outputMessages: string[] = []
-        
-        for (const msgStr of state.dapMessages) {
-            try {
-                // "Server -> Client: " 또는 "Client -> Server: " 프리픽스 제거
-                const jsonStart = msgStr.indexOf('{')
-                if (jsonStart === -1) continue
-                
-                const jsonStr = msgStr.substring(jsonStart)
-                const msg = parseJsonWithComments(jsonStr)
-                
-                if (msg.type === 'event' && msg.event === 'output' && msg.body?.output) {
-                    outputMessages.push(msg.body.output)
-                }
-            } catch (e) {
-                // JSON 파싱 실패 시 무시
-            }
-        }
-        
-        return { 
-            contents: [{ 
+        // DAP messages are no longer tracked
+        return {
+            contents: [{
                 uri: uri.href,
-                text: outputMessages.length > 0 ? outputMessages.join('\n') : 'No debug console output available' 
-            }] 
+                text: 'No debug console output available (DAP message tracking disabled)'
+            }]
         }
     }
 }
@@ -459,80 +440,14 @@ export const exceptionInfoResource = {
                 }
             }
             
-            // DAP 메시지에서 예외 정보 추출
-            const { state } = await import('./state.js')
-            const exceptionInfo: any[] = []
-            
-            // 최근 DAP 메시지들을 역순으로 검색하여 예외 정보 찾기
-            for (let i = state.dapMessages.length - 1; i >= 0; i--) {
-                const msgStr = state.dapMessages[i]
-                
-                try {
-                    const jsonStart = msgStr.indexOf('{')
-                    if (jsonStart === -1) continue
-                    
-                    const jsonStr = msgStr.substring(jsonStart)
-                    const msg = parseJsonWithComments(jsonStr)
-                    
-                    // stopped 이벤트에서 예외 정보 찾기
-                    if (msg.type === 'event' && msg.event === 'stopped' && msg.body) {
-                        const reason = msg.body.reason
-                        if (reason === 'exception') {
-                            const exceptionInfo = {
-                                reason: reason,
-                                threadId: msg.body.threadId,
-                                text: msg.body.text,
-                                description: msg.body.description,
-                                allThreadsStopped: msg.body.allThreadsStopped,
-                                timestamp: new Date().toISOString()
-                            }
-                            
-                            return {
-                                contents: [{
-                                    uri: uri.href,
-                                    text: JSON.stringify(exceptionInfo, null, 2)
-                                }]
-                            }
-                        }
-                    }
-                    
-                    // output 이벤트에서 예외 메시지 찾기
-                    if (msg.type === 'event' && msg.event === 'output' && msg.body?.output) {
-                        const output = msg.body.output
-                        if (output.includes('Error:') || output.includes('Exception:') || output.includes('TypeError:') || output.includes('ReferenceError:')) {
-                            exceptionInfo.push({
-                                type: 'output',
-                                message: output.trim(),
-                                timestamp: new Date().toISOString()
-                            })
-                        }
-                    }
-                } catch (e) {
-                    continue
-                }
-            }
-            
-            // 예외 정보가 없는 경우
-            if (exceptionInfo.length === 0) {
-                return {
-                    contents: [{
-                        uri: uri.href,
-                        text: JSON.stringify({ message: 'No exception information available' }, null, 2)
-                    }]
-                }
-            }
-            
-            const result = {
-                sessionId: session.id,
-                sessionName: session.name,
-                exceptions: exceptionInfo,
-                totalExceptions: exceptionInfo.length
-            }
-            
+            // DAP messages are no longer tracked
+            // Exception information cannot be extracted without DAP message tracking
             return {
                 contents: [{
                     uri: uri.href,
-                    text: JSON.stringify(result, null, 2)
+                    text: JSON.stringify({
+                        message: 'Exception information not available (DAP message tracking disabled)'
+                    }, null, 2)
                 }]
             }
         } catch (error: any) {

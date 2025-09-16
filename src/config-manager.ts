@@ -14,7 +14,6 @@ export interface WorkspaceConfig {
     pid: number
     workspacePath: string
     workspaceName: string
-    lastHeartbeat: number
 }
 
 /**
@@ -24,7 +23,6 @@ export interface WorkspaceConfig {
 export class ConfigManager {
     private configDir: string
     private configPath: string
-    private heartbeatTimer?: NodeJS.Timeout
     
     constructor(private workspaceFolder: vscode.WorkspaceFolder | undefined) {
         if (!workspaceFolder) {
@@ -49,15 +47,11 @@ export class ConfigManager {
                 port,
                 pid: process.pid,
                 workspacePath: this.workspaceFolder!.uri.fsPath,
-                workspaceName: this.workspaceFolder!.name,
-                lastHeartbeat: Date.now()
+                workspaceName: this.workspaceFolder!.name
             }
             
             // 파일 저장
             await this.saveConfig(config)
-            
-            // Heartbeat 시작
-            this.startHeartbeat()
             
             console.log(`Config file created at: ${this.configPath}`)
         } catch (error) {
@@ -78,8 +72,7 @@ export class ConfigManager {
             }
             const updatedConfig: WorkspaceConfig = {
                 ...currentConfig,
-                ...updates,
-                lastHeartbeat: Date.now()
+                ...updates
             }
             await this.saveConfig(updatedConfig)
         } catch (error) {
@@ -125,40 +118,10 @@ export class ConfigManager {
     }
     
     /**
-     * Heartbeat 타이머 시작
-     */
-    private startHeartbeat(): void {
-        // 기존 타이머 정리
-        this.stopHeartbeat()
-        
-        // 5초마다 heartbeat 업데이트
-        this.heartbeatTimer = setInterval(async () => {
-            try {
-                await this.updateConfig({ lastHeartbeat: Date.now() })
-            } catch (error) {
-                console.error('Heartbeat update failed:', error)
-            }
-        }, 5000)
-    }
-    
-    /**
-     * Heartbeat 타이머 중지
-     */
-    stopHeartbeat(): void {
-        if (this.heartbeatTimer) {
-            clearInterval(this.heartbeatTimer as unknown as number)
-            this.heartbeatTimer = undefined
-        }
-    }
-    
-    /**
      * 설정 파일 삭제
      */
     async cleanup(): Promise<void> {
         try {
-            // Heartbeat 중지
-            this.stopHeartbeat()
-            
             // 파일 삭제
             await unlink(this.configPath)
             console.log(`Config file removed: ${this.configPath}`)
@@ -176,11 +139,4 @@ export class ConfigManager {
         return `vscode-${process.pid}-${Date.now()}`
     }
     
-    /**
-     * VSCode가 활성 상태인지 확인
-     */
-    static isAlive(config: WorkspaceConfig, maxAge: number = 10000): boolean {
-        const age = Date.now() - config.lastHeartbeat
-        return age < maxAge
-    }
 }

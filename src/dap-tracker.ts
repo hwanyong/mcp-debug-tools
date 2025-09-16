@@ -8,13 +8,11 @@ export function createDebugAdapterTracker(session: vscode.DebugSession): vscode.
     return {
         // Called before a message is sent from the client (VS Code) to the debug adapter.
         onWillReceiveMessage: (message: any) => {
-            // DAP 메시지 누적 비활성화 - 메모리 누수 방지
-            // state.addDapMessage(`Client -> Server: ${JSON.stringify(message, null, 2)}`)
+            // Currently not tracking DAP messages
         },
         // Called after a message is received from the debug adapter.
         onDidSendMessage: (message: any) => {
-            // DAP 메시지 누적 비활성화 - 메모리 누수 방지
-            // state.addDapMessage(`Server -> Client: ${JSON.stringify(message, null, 2)}`)
+            // Currently not tracking DAP messages
         },
         // You can also handle errors and the tracker's disposal.
         onError: (error: Error) => {

@@ -15,7 +15,6 @@ export interface RegistryEntry {
     configPath: string
     port: number
     pid: number
-    lastHeartbeat: number
 }
 
 export interface GlobalRegistry {
@@ -61,8 +60,7 @@ export class RegistryManager {
                 workspaceName: config.workspaceName,
                 configPath,
                 port: config.port,
-                pid: config.pid,
-                lastHeartbeat: config.lastHeartbeat
+                pid: config.pid
             }
             
             // 기존 엔트리 제거 (같은 workspace)
@@ -107,35 +105,13 @@ export class RegistryManager {
     }
     
     /**
-     * 인스턴스 heartbeat 업데이트
-     */
-    async updateHeartbeat(vscodeInstanceId: string): Promise<void> {
-        try {
-            const registry = await this.loadRegistry()
-            
-            // 해당 인스턴스 찾기
-            const instance = registry.activeInstances.find(
-                e => e.vscodeInstanceId === vscodeInstanceId
-            )
-            
-            if (instance) {
-                instance.lastHeartbeat = Date.now()
-                registry.lastUpdated = Date.now()
-                await this.saveRegistry(registry)
-            }
-        } catch (error) {
-            console.error('Failed to update heartbeat:', error)
-        }
-    }
-    
-    /**
      * 활성 인스턴스 목록 조회
      */
     async getActiveInstances(): Promise<RegistryEntry[]> {
         try {
             const registry = await this.loadRegistry()
             
-            // Stale 엔트리 필터링 (15초 이상 heartbeat 없음)
+            // PID가 살아있는 엔트리만 필터링
             const activeInstances = registry.activeInstances.filter(
                 e => this.isInstanceAlive(e)
             )
@@ -196,17 +172,14 @@ export class RegistryManager {
     }
     
     /**
-     * 인스턴스가 살아있는지 확인
+     * 인스턴스가 살아있는지 확인 (PID 체크만)
      */
-    private isInstanceAlive(entry: RegistryEntry, maxAge: number = 15000): boolean {
-        const age = Date.now() - entry.lastHeartbeat
-        
-        // PID 체크 (가능한 경우)
+    private isInstanceAlive(entry: RegistryEntry): boolean {
+        // PID 체크만 수행
         try {
             // process.kill(0)은 프로세스 존재 여부만 확인
             process.kill(entry.pid, 0)
-            // heartbeat age도 확인
-            return age < maxAge
+            return true
         } catch (error) {
             // 프로세스가 없거나 권한이 없음
             return false

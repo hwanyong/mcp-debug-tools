@@ -19,19 +19,22 @@ export function initializeMcpServer(): McpServer {
 
     // 모든 도구 등록
     for (const tool of allTools) {
+        console.info(`📝 등록 중인 도구: ${tool.name}`)
         mcpServer.registerTool(tool.name, tool.config, tool.handler)
     }
 
     // 모든 리소스 등록
     for (const resource of allResources) {
+        console.info(`📚 등록 중인 리소스: ${resource.name}`)
         mcpServer.registerResource(
-            resource.name, 
-            resource.uri, 
-            resource.config, 
+            resource.name,
+            resource.uri,
+            resource.config,
             resource.handler
         )
     }
 
+    console.info(`✅ MCP 서버 초기화 완료: ${allTools.length}개 도구, ${allResources.length}개 리소스`)
     return mcpServer
 }
 
@@ -45,24 +48,74 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
 
     // Handle POST requests for client-to-server communication
     app.post('/mcp', async (req, res) => {
-        console.info(`📨 MCP POST 요청 수신: ${req.headers['mcp-session-id'] || '새 세션'}`)
-        console.info(`📋 요청 헤더:`, req.headers)
-        console.info(`📄 요청 본문:`, JSON.stringify(req.body, null, 2))
-        
+        // tools/call 요청을 직접 처리 (Transport 우회)
+        if (req.body?.method === 'tools/call') {
+            const { name: toolName, arguments: toolArgs } = req.body.params || {}
+            
+            console.info(`🛠️ [직접 처리] 도구 호출: ${toolName}`)
+            
+            // 도구 찾기
+            const tool = allTools.find(t => t.name === toolName)
+            
+            if (!tool) {
+                res.status(404).json({
+                    jsonrpc: '2.0',
+                    error: {
+                        code: -32601,
+                        message: `Tool not found: ${toolName}`
+                    },
+                    id: req.body.id
+                })
+                return
+            }
+            
+            try {
+                // 도구 핸들러 직접 실행
+                const startTime = Date.now()
+                const result = await tool.handler(toolArgs)
+                const elapsed = Date.now() - startTime
+                
+                // JSON-RPC 응답 직접 전송
+                res.json({
+                    jsonrpc: '2.0',
+                    result: result,
+                    id: req.body.id
+                })
+                
+                console.info(`✅ [직접 처리] 도구 실행 완료: ${toolName} (${elapsed}ms)`)
+                return  // Transport 사용하지 않음
+                
+            } catch (error: any) {
+                console.error(`❌ [직접 처리] 도구 실행 실패: ${toolName} - ${error.message}`)
+                res.status(500).json({
+                    jsonrpc: '2.0',
+                    error: {
+                        code: -32603,
+                        message: error.message
+                    },
+                    id: req.body.id
+                })
+                return
+            }
+        }
+
         const sessionId = req.headers['mcp-session-id'] as string | undefined
         let transport: StreamableHTTPServerTransport
 
-        if (sessionId && state.getTransport(sessionId)) {
-            console.info(`🔄 기존 세션 재사용: ${sessionId}`)
-            transport = state.getTransport(sessionId)!
-        } else if (!sessionId && isInitializeRequest(req.body)) {
-            console.info('🆕 새 MCP 세션 초기화...')
-            console.info(`🔧 초기화 요청 내용:`, JSON.stringify(req.body, null, 2))
+        // Stateless 구조: 매 initialize마다 새 세션 생성
+        if (isInitializeRequest(req.body)) {
+            // 기존 세션이 있으면 정리
+            if (sessionId && state.getTransport(sessionId)) {
+                console.info(`🔄 [정리] 기존 세션 ${sessionId} 정리`)
+                state.removeTransport(sessionId)
+            }
+            
+            // 새 Transport 생성
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: (id) => {
                     state.addTransport(id, transport)
-                    console.info(`✅ 세션 초기화 완료: ${id}`)
+                    console.info(`✅ [초기화] 새 세션 생성: ${id}`)
                 },
                 // For local development, disable DNS rebinding protection
                 enableDnsRebindingProtection: false,
@@ -70,7 +123,7 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
             transport.onclose = () => {
                 if (transport.sessionId) {
                     state.removeTransport(transport.sessionId)
-                    console.info(`🔚 세션 종료: ${transport.sessionId}`)
+                    console.info(`🔚 [종료] 세션 종료: ${transport.sessionId}`)
                 }
             }
             transport.onerror = (error) => {
@@ -80,42 +133,32 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
                 }
             }
             await mcpServer.connect(transport)
-            console.info('🔗 MCP 서버에 Transport 연결 완료')
+        } else if (sessionId && state.getTransport(sessionId)) {
+            // 기존 세션 사용 (재연결 시도하지 않음)
+            transport = state.getTransport(sessionId)!
+            console.info(`📡 [재사용] 기존 세션 사용: ${sessionId}`)
         } else {
-            console.info('❌ 잘못된 요청: 유효하지 않은 세션 ID')
-            console.info(`🔍 요청 분석:`, {
-                hasSessionId: !!sessionId,
-                isInitializeRequest: isInitializeRequest(req.body),
-                bodyType: typeof req.body,
-                bodyKeys: req.body ? Object.keys(req.body) : []
-            })
-            res.status(400).json({ 
-                jsonrpc: '2.0', 
-                error: { code: -32000, message: 'Bad Request: No valid session ID provided' }, 
-                id: null 
+            // 세션 ID가 없거나 유효하지 않은 경우
+            res.status(400).json({
+                jsonrpc: '2.0',
+                error: { code: -32000, message: 'Bad Request: Invalid or missing session' },
+                id: null
             })
             return
         }
         try {
-            console.info(`🔄 Transport 요청 처리 중...`)
-            console.info(`📤 응답 전송 전 상태:`, {
-                sessionId,
-                hasTransport: !!transport,
-                transportType: transport.constructor.name
-            })
+            // Transport를 통해 처리 (initialize, notifications 등)
             await transport.handleRequest(req, res, req.body)
-            console.info(`✅ Transport 요청 처리 완료`)
         } catch (error) {
-            console.error(`❌ Transport 요청 오류: ${error}`)
-            console.error(`🔍 오류 상세:`, error)
+            console.error(`❌ [오류] Transport 처리 실패: ${error}`)
             // 세션 에러 발생 시 세션 정리
             if (sessionId) {
                 state.removeTransport(sessionId)
             }
-            res.status(500).json({ 
-                jsonrpc: '2.0', 
-                error: { code: -32603, message: 'Internal error' }, 
-                id: null 
+            res.status(500).json({
+                jsonrpc: '2.0',
+                error: { code: -32603, message: 'Internal error' },
+                id: null
             })
         }
     })
@@ -123,32 +166,16 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
     // Reusable handler for GET and DELETE requests
     const handleSessionRequest = async (req: express.Request, res: express.Response) => {
         const sessionId = req.headers['mcp-session-id'] as string | undefined
-        console.info(`📨 MCP ${req.method} 요청 수신: ${sessionId || '세션 ID 없음'}`)
-        console.info(`📋 ${req.method} 요청 헤더:`, req.headers)
-        
+
         if (!sessionId || !state.getTransport(sessionId)) {
-            console.info('❌ 잘못된 세션 ID 또는 누락된 세션 ID')
-            console.info(`🔍 세션 분석:`, {
-                sessionId,
-                hasTransport: sessionId ? !!state.getTransport(sessionId) : false,
-                availableSessions: Object.keys(state.transports)
-            })
             res.status(400).send('Invalid or missing session ID')
             return
         }
         const transport = state.getTransport(sessionId)!
         try {
-            console.info(`🔄 세션 요청 처리 중: ${sessionId}`)
-            console.info(`📤 ${req.method} 응답 전송 전 상태:`, {
-                sessionId,
-                hasTransport: !!transport,
-                transportType: transport.constructor.name
-            })
             await transport.handleRequest(req, res)
-            console.info(`✅ 세션 요청 처리 완료: ${sessionId}`)
         } catch (error) {
-            console.error(`❌ 세션 요청 오류: ${error}`)
-            console.error(`🔍 세션 오류 상세:`, error)
+            console.error(`❌ [오류] 세션 처리 실패 (${sessionId}): ${error}`)
             // 세션 에러 발생 시 세션 정리
             state.removeTransport(sessionId)
             res.status(500).send('Internal server error')
@@ -170,22 +197,22 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
 export async function startHttpServer(app: express.Application, onServerStarted?: () => void): Promise<void> {
     try {
         const availablePort = await findAvailablePort(MCP_SERVER_PORT)
-        
+
         const httpServer = app.listen(availablePort, () => {
             // Store server information
             state.currentPort = availablePort
             state.serverStartTime = new Date()
             state.httpServer = httpServer
-            
-            console.info(`🚀 MCP Streamable HTTP Server is running!`)
-            console.info(`📍 Server URL: http://localhost:${availablePort}`)
-            console.info(`🔗 MCP Endpoint: http://localhost:${availablePort}/mcp`)
-            console.info(`📊 Port: ${availablePort}`)
-            console.info(`🌐 Domain: localhost`)
+
+            console.error(`🚀 MCP Streamable HTTP Server is running!`)
+            console.error(`📍 Server URL: http://localhost:${availablePort}`)
+            console.error(`🔗 MCP Endpoint: http://localhost:${availablePort}/mcp`)
+            console.error(`📊 Port: ${availablePort}`)
+            console.error(`🌐 Domain: localhost`)
             if (availablePort !== MCP_SERVER_PORT) {
-                console.info(`⚠️  Original port ${MCP_SERVER_PORT} was busy, using port ${availablePort} instead`)
+                console.error(`⚠️  Original port ${MCP_SERVER_PORT} was busy, using port ${availablePort} instead`)
             }
-            
+
             // Call the callback if provided
             if (onServerStarted) {
                 onServerStarted()
@@ -204,7 +231,7 @@ export function stopHttpServer(): Promise<void> {
     return new Promise((resolve) => {
         if (state.httpServer) {
             state.httpServer.close(() => {
-                console.info('🔚 HTTP Server closed.')
+                console.error('🔚 HTTP Server closed.')
                 state.httpServer = undefined
                 state.currentPort = undefined
                 state.serverStartTime = undefined

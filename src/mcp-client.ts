@@ -57,12 +57,33 @@ export async function createMcpClient(serverUrl: string): Promise<McpServer> {
             },
             async (args: any) => {
                 logInfo(`🛠️ 도구 호출: ${tool.name} - ${JSON.stringify(args)}`)
-                const result = await client.callTool({
-                    name: tool.name,
-                    arguments: args
-                })
-                logInfo(`✅ 도구 호출 완료: ${tool.name}`)
-                return result as any
+                const startTime = Date.now()
+                
+                try {
+                    // 타임아웃 Promise 설정 (30초)
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => {
+                            reject(new Error(`Tool ${tool.name} timed out after 30 seconds`))
+                        }, 30000)
+                    })
+                    
+                    // 실제 도구 호출
+                    const toolPromise = client.callTool({
+                        name: tool.name,
+                        arguments: args
+                    })
+                    
+                    // 타임아웃과 도구 호출 중 먼저 완료되는 것 반환
+                    const result = await Promise.race([toolPromise, timeoutPromise])
+                    
+                    const duration = Date.now() - startTime
+                    logInfo(`✅ 도구 호출 완료: ${tool.name} (${duration}ms)`)
+                    return result as any
+                } catch (error: any) {
+                    const duration = Date.now() - startTime
+                    logInfo(`❌ 도구 호출 실패: ${tool.name} - ${error.message} (${duration}ms)`)
+                    throw error
+                }
             }
         )
     }

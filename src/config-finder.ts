@@ -137,16 +137,13 @@ export class ConfigFinder {
     }
     
     /**
-     * 설정이 살아있는지 확인 (15초 이내 heartbeat)
+     * 설정이 살아있는지 확인 (PID 체크만)
      */
-    private static isConfigAlive(config: WorkspaceConfig, maxAge: number = 15000): boolean {
-        const age = Date.now() - config.lastHeartbeat
-        
-        // PID가 살아있는지 확인
+    private static isConfigAlive(config: WorkspaceConfig): boolean {
+        // PID가 살아있는지만 확인
         try {
             process.kill(config.pid, 0)
-            // heartbeat age도 확인
-            return age < maxAge
+            return true
         } catch (error) {
             // 프로세스가 없거나 권한이 없음
             return false
