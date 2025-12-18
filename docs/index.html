@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>MCP Debug Tools - AI-Powered Smart Debugging for VSCode</title>
+    <meta name="description"
+        content="Unlock powerful debugging in AI IDEs like Cursor & Windsurf. MCP Debug Tools enables simultaneous multi-project debugging, real-time AI variable inspection, and multi-thread support.">
+    <meta name="keywords"
+        content="mcp, debug, vscode, ai, cursor, windsurf, multi-thread, node.js, dap, debugging tools, extensions">
+    <meta name="author" content="Hwanyong Yoo">
+    <link rel="canonical" href="https://hwanyong.github.io/mcp-debug-tools/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://hwanyong.github.io/mcp-debug-tools/">
+    <meta property="og:title" content="MCP Debug Tools - AI-Powered Debugging">
+    <meta property="og:description"
+        content="Debug smarter with AI. Multi-project, multi-thread, and real-time AI inspection for VSCode, Cursor, and Windsurf.">
+    <meta property="og:image" content="https://hwanyong.github.io/mcp-debug-tools/icon.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://hwanyong.github.io/mcp-debug-tools/">
+    <meta property="twitter:title" content="MCP Debug Tools - AI-Powered Debugging">
+    <meta property="twitter:description"
+        content="Debug smarter with AI. Multi-project, multi-thread, and real-time AI inspection for VSCode, Cursor, and Windsurf.">
+    <meta property="twitter:image" content="https://hwanyong.github.io/mcp-debug-tools/icon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Favicon (using existing icon.png if available, assumed relative path) -->
+    <link rel="icon" type="image/png" href="icon.png">
+</head>
+
+<body>
+    <div class="bg-gradient"></div>
+
+    <header>
+        <div class="container">
+            <a href="#" class="logo">
+                <img src="icon.png" alt="MCP Debug Tools Icon">
+                <span>MCP Debug Tools</span>
+            </a>
+
+            <!-- Desktop Nav -->
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#install">Installation</a>
+                <a href="#community">Community</a>
+                <a href="https://github.com/hwanyong/mcp-debug-tools" target="_blank">GitHub</a>
+
+                <!-- Language Dropdown -->
+                <div class="lang-dropdown">
+                    <button class="lang-btn">
+                        <span>🇺🇸 EN</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M6 9l6 6 6-6" />
+                        </svg>
+                    </button>
+                    <div class="lang-menu">
+                        <a href="index.html" class="active">🇺🇸 English</a>
+                        <a href="https://github.com/hwanyong/mcp-debug-tools/blob/main/README_KR.md"
+                            target="_blank">🇰🇷 한국어</a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Mobile Menu Button -->
+            <button class="mobile-menu-btn" aria-label="Toggle Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav">
+        <a href="#features" class="mobile-link">Features</a>
+        <a href="#install" class="mobile-link">Installation</a>
+        <a href="#community" class="mobile-link">Community</a>
+        <a href="https://github.com/hwanyong/mcp-debug-tools" target="_blank" class="mobile-link">GitHub</a>
+        <div class="mobile-lang">
+            <a href="index.html" class="active">🇺🇸 English</a>
+            <a href="https://github.com/hwanyong/mcp-debug-tools/blob/main/README_KR.md" target="_blank">🇰🇷 한국어</a>
+        </div>
+    </div>
+
+    <script>
+        // Mobile Menu Toggle
+        const mobileBtn = document.querySelector('.mobile-menu-btn');
+        const mobileNav = document.querySelector('.mobile-nav');
+
+        mobileBtn.addEventListener('click', () => {
+            mobileNav.classList.toggle('active');
+            mobileBtn.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('.mobile-link').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileNav.classList.remove('active');
+                mobileBtn.classList.remove('active');
+            });
+        });
+    </script>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>AI-Powered Smart Debugging</h1>
+                <p>Seamlessly integrate powerful debugging capabilities into your AI-first code editors like Cursor and
+                    Windsurf. Experience the future of debugging.</p>
+
+                <div class="hero-btns">
+                    <a href="https://marketplace.visualstudio.com/items?itemName=uhd.mcp-debug-tools"
+                        class="btn btn-primary" target="_blank">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Install Extension
+                    </a>
+                    <a href="#install" class="btn btn-secondary">
+                        Get Started
+                    </a>
+                </div>
+
+                <div class="video-wrapper">
+                    <div class="video-container">
+                        <iframe src="https://www.youtube.com/embed/0lE4-jZ9hTQ?rel=0" title="MCP Debug Tools Demo"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="container">
+                <h2>Why MCP Debug Tools?</h2>
+                <div class="grid">
+                    <!-- Feature 1 -->
+                    <div class="card">
+                        <div class="card-icon">🚀</div>
+                        <h3>Multi-Project Debugging</h3>
+                        <p>Debug multiple Node.js projects simultaneously. Manage complex microservices or coupled
+                            applications with ease in a single session.</p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="card">
+                        <div class="card-icon">🤖</div>
+                        <h3>AI Auto-Debugging</h3>
+                        <p>Empower your AI assistant. Execute debugging commands using natural language in Cursor or
+                            Windsurf to find and fix bugs faster.</p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="card">
+                        <div class="card-icon">⚡</div>
+                        <h3>Real-time Inspection</h3>
+                        <p>AI-driven real-time analysis of variables and call stacks. Get instant insights into your
+                            code's execution state without manual probing.</p>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="card">
+                        <div class="card-icon">🧵</div>
+                        <h3>Multi-Thread Support</h3>
+                        <p>Seamlessly debug Worker Threads and SharedArrayBuffer. Handle complex concurrency issues with
+                            confidence.</p>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="card">
+                        <div class="card-icon">🔄</div>
+                        <h3>Auto-Connect</h3>
+                        <p>Automatically connects to multiple VSCode instances. No more manual configuration or port
+                            hunting.</p>
+                    </div>
+
+                    <!-- Feature 6 -->
+                    <div class="card">
+                        <div class="card-icon">🎯</div>
+                        <h3>Smart Breakpoints</h3>
+                        <p>Let AI manage your breakpoints. Auto-set and manage breakpoints based on context and error
+                            patterns.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="install" class="installation">
+            <div class="container">
+                <h2>Installation & Setup</h2>
+                <p style="text-align: center;">Follow these steps to enable AI-powered debugging in your workspace.</p>
+
+                <div class="grid" style="max-width: 900px; margin: 0 auto;">
+                    <!-- Step 1 -->
+                    <div class="card">
+                        <div class="card-icon" style="font-size: 1.2rem; padding: 0.5rem 0.8rem;">1</div>
+                        <h3>Install VSCode Extension</h3>
+                        <p>Search for "MCP Debug Tools" in the VSCode Marketplace. This is required to bridge the AI
+                            tool with VSCode's debugger.</p>
+                        <div style="margin-top: 1.5rem; text-align: center;">
+                            <a href="https://marketplace.visualstudio.com/items?itemName=uhd.mcp-debug-tools"
+                                class="btn btn-primary" target="_blank">VSCode Marketplace</a>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="card">
+                        <div class="card-icon" style="font-size: 1.2rem; padding: 0.5rem 0.8rem;">2</div>
+                        <h3>Configure MCP Server</h3>
+                        <p>Add the following configuration to your AI tool (Cursor or Windsurf settings) to enable the
+                            connection.</p>
+                        <div class="code-block" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                            <pre style="color: #a5b4fc; font-size: 0.9rem; margin: 0; width: 100%; overflow-x: auto;">
+"mcpServers": {
+  "dap-proxy": {
+    "command": "npx",
+    "args": ["-y", "@uhd_kr/mcp-debug-tools@latest"]
+  }
+}</pre>
+                            <button class="copy-btn" style="position: absolute; top: 1rem; right: 1rem;"
+                                onclick="navigator.clipboard.writeText(`&quot;dap-proxy&quot;: {\n  &quot;command&quot;: &quot;npx&quot;,\n  &quot;args&quot;: [&quot;-y&quot;, &quot;@uhd_kr/mcp-debug-tools@latest&quot;]\n}`)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Troubleshooting / Manual Install -->
+                <div class="troubleshooting"
+                    style="margin-top: 4rem; background: rgba(59, 130, 246, 0.05); border: 1px solid var(--accent-blue); padding: 2rem; border-radius: 1.5rem; max-width: 900px; margin-left: auto; margin-right: auto;">
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 2rem;">💡</span>
+                        <h3 style="margin: 0; font-size: 1.5rem;">Can't find the extension in your editor?</h3>
+                    </div>
+                    <p>Forked versions of VS Code (like <strong>Cursor</strong> or <strong>Windsurf</strong>) may not
+                        show the extension in their specific marketplaces. In this case, you can install it manually
+                        using the <code>.vsix</code> file.</p>
+
+                    <div class="manual-steps"
+                        style="margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div>
+                            <h4>A. Download VSIX</h4>
+                            <p style="font-size: 0.9rem;">Go to the GitHub Releases page and download the latest
+                                <code>.vsix</code> file.
+                            </p>
+                            <a href="https://github.com/hwanyong/mcp-debug-tools/releases" target="_blank"
+                                class="btn btn-secondary" style="font-size: 0.9rem;">View All Releases</a>
+                            <div style="margin-top: 1rem;">
+                                <img src="/Users/uhd/.gemini/antigravity/brain/e529515f-f64a-4a46-901f-b5b26be73410/latest_release_vsix_1766092891392.png"
+                                    style="width: 100%; border-radius: 8px; border: 1px solid var(--glass-border);"
+                                    alt="GitHub VSIX Release">
+                            </div>
+                        </div>
+                        <div>
+                            <h4>B. Install from VSIX</h4>
+                            <p style="font-size: 0.9rem;">In your editor, go to the <strong>Extensions</strong> tab,
+                                click the <strong>(...)</strong> menu at the top, and select <strong>"Install from
+                                    VSIX..."</strong>.</p>
+                            <div style="margin-top: 1rem;">
+                                <div
+                                    style="background: #1e1e24; padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                                    <div
+                                        style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <div
+                                            style="width: 12px; height: 12px; background: #ff5f56; border-radius: 50%;">
+                                        </div>
+                                        <div
+                                            style="width: 12px; height: 12px; background: #ffbd2e; border-radius: 50%;">
+                                        </div>
+                                        <div
+                                            style="width: 12px; height: 12px; background: #27c93f; border-radius: 50%;">
+                                        </div>
+                                    </div>
+                                    <div style="border-top: 1px solid #333; padding-top: 1rem;">
+                                        <div
+                                            style="font-size: 0.8rem; color: #a0a0b0; display: flex; align-items: center; gap: 0.5rem;">
+                                            <span>Extensions</span>
+                                            <span style="flex-grow: 1;"></span>
+                                            <span
+                                                style="background: #333; padding: 2px 4px; border-radius: 4px; color: #fff;">...</span>
+                                        </div>
+                                        <div
+                                            style="margin-top: 0.5rem; background: #25252b; border-radius: 4px; padding: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                                            <div
+                                                style="font-size: 0.8rem; padding: 4px 8px; border-radius: 2px; background: var(--accent-blue); color: #fff;">
+                                                Install from VSIX...</div>
+                                            <div style="font-size: 0.8rem; padding: 4px 8px; color: #a0a0b0;">Install
+                                                Another Version...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="community" class="community">
+            <div class="container">
+                <div class="community-content">
+                    <div class="text-center section-header">
+                        <h2>Open Source for Everyone</h2>
+                        <p class="section-desc">
+                            MCP Debug Tools is built on the principles of transparency and collaboration.
+                            As an <strong>Open Source</strong> project under the <strong>GPL-3.0 license</strong>,
+                            anyone can explore the code, fork the repository, or contribute back to the community.
+                        </p>
+                    </div>
+
+                    <div class="community-grid">
+                        <div class="community-card">
+                            <div class="card-badge">🛡️ Transparency</div>
+                            <p>Verify exactly how your data is handled. Security and privacy are guaranteed by our open
+                                codebase.</p>
+                        </div>
+                        <div class="community-card">
+                            <div class="card-badge">🤝 Freedom to Fork</div>
+                            <p>Need a custom feature? Fork the project and build your own version tailored to your
+                                specific workflow.</p>
+                        </div>
+                        <div class="community-card">
+                            <div class="card-badge">📈 Community Driven</div>
+                            <p>Help us improve. Join hundreds of developers in making debugging smarter for everyone.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-center community-footer">
+                        <a href="https://github.com/hwanyong/mcp-debug-tools" target="_blank" class="btn btn-github">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                            </svg>
+                            Star on GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 MCP Debug Tools. Licensed under GPL-3.0.</p>
+            <p>Created by <a href="https://github.com/hwanyong" target="_blank">Hwanyong Yoo</a></p>
+        </div>
+    </footer>
+</body>
+
+</html>
