@@ -70,6 +70,7 @@
     "@types/json-schema": "^7.0.15",
     "json-schema": "^0.4.0",
     "@modelcontextprotocol/sdk": "^1.17.1",
+    "commander": "^14.0.3",
     "zod": "^3.22.4",
     "express": "^4.21.2"
   }
