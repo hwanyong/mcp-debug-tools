@@ -2,25 +2,20 @@ import * as vscode from 'vscode'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 
+export interface McpSession {
+    server: McpServer
+    transport: StreamableHTTPServerTransport
+}
+
 /**
  * Global state for the extension
  */
 class ExtensionState {
-    private _mcpServer: McpServer | undefined
     private _httpServer: any
-    private _transports: { [sessionId: string]: StreamableHTTPServerTransport } = {}
+    private _sessions: { [sessionId: string]: McpSession } = {}
     private _currentPort: number | undefined
     private _serverStartTime: Date | undefined
     private _activePanels: vscode.WebviewPanel[] = []
-
-    // MCP Server
-    get mcpServer(): McpServer | undefined {
-        return this._mcpServer
-    }
-
-    set mcpServer(server: McpServer | undefined) {
-        this._mcpServer = server
-    }
 
     // HTTP Server
     get httpServer(): any {
@@ -31,28 +26,49 @@ class ExtensionState {
         this._httpServer = server
     }
 
-    // Transports
-    get transports(): { [sessionId: string]: StreamableHTTPServerTransport } {
-        return this._transports
+    // MCP sessions
+    get sessions(): { [sessionId: string]: McpSession } {
+        return this._sessions
     }
 
-    addTransport(sessionId: string, transport: StreamableHTTPServerTransport) {
-        this._transports[sessionId] = transport
+    addSession(sessionId: string, session: McpSession) {
+        this._sessions[sessionId] = session
     }
 
-    removeTransport(sessionId: string) {
-        if (this._transports[sessionId]) {
-            delete this._transports[sessionId]
-            console.log(`Transport removed: ${sessionId}`)
+    removeSession(sessionId: string) {
+        if (this._sessions[sessionId]) {
+            delete this._sessions[sessionId]
+            console.log(`MCP session removed: ${sessionId}`)
         }
     }
 
-    getTransport(sessionId: string): StreamableHTTPServerTransport | undefined {
-        return this._transports[sessionId]
+    getSession(sessionId: string): McpSession | undefined {
+        return this._sessions[sessionId]
+    }
+
+    async closeSession(sessionId: string): Promise<void> {
+        const session = this._sessions[sessionId]
+        if (!session) {
+            return
+        }
+
+        delete this._sessions[sessionId]
+        await session.server.close()
+        console.log(`MCP session closed: ${sessionId}`)
+    }
+
+    async closeAllSessions(): Promise<void> {
+        const sessions = Object.entries(this._sessions)
+        this._sessions = {}
+
+        await Promise.allSettled(sessions.map(async ([sessionId, session]) => {
+            await session.server.close()
+            console.log(`MCP session closed: ${sessionId}`)
+        }))
     }
 
     getTransportCount(): number {
-        return Object.keys(this._transports).length
+        return Object.keys(this._sessions).length
     }
 
     // Server Info
@@ -106,13 +122,8 @@ class ExtensionState {
 
     // Reset all state
     reset() {
-        this._mcpServer = undefined
         this._httpServer = undefined
-        // 모든 세션 정리
-        for (const sessionId in this._transports) {
-            console.log(`Cleaning up session: ${sessionId}`)
-            delete this._transports[sessionId]
-        }
+        this._sessions = {}
         this._currentPort = undefined
         this._serverStartTime = undefined
         this._activePanels = []

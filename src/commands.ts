@@ -55,12 +55,8 @@ async function startServer() {
     try {
         updateStatusBar('initializing')
         
-        // Initialize MCP Server
-        const mcpServer = initializeMcpServer()
-        state.mcpServer = mcpServer
-
         // Create HTTP app
-        const app = createHttpApp(mcpServer)
+        const app = createHttpApp(initializeMcpServer)
 
         // Start HTTP server
         await startHttpServer(app, () => {
@@ -89,11 +85,6 @@ async function stopServer() {
         
         // Stop HTTP server
         await stopHttpServer()
-
-        // Close MCP server
-        if (state.mcpServer) {
-            state.mcpServer.close()
-        }
 
         // Reset state
         state.reset()
