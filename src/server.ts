@@ -42,7 +42,7 @@ export function initializeMcpServer(): McpServer {
 /**
  * Create and configure Express HTTP server for MCP
  */
-export function createHttpApp(mcpServer: McpServer): express.Application {
+export function createHttpApp(createMcpServer: () => McpServer): express.Application {
     const app = express()
     app.use(express.json())
 
@@ -101,20 +101,23 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
 
         const sessionId = req.headers['mcp-session-id'] as string | undefined
         let transport: StreamableHTTPServerTransport
+        let sessionServer: McpServer | undefined
 
         // Stateless 구조: 매 initialize마다 새 세션 생성
         if (isInitializeRequest(req.body)) {
             // 기존 세션이 있으면 정리
-            if (sessionId && state.getTransport(sessionId)) {
+            if (sessionId && state.getSession(sessionId)) {
                 console.info(`🔄 [정리] 기존 세션 ${sessionId} 정리`)
-                state.removeTransport(sessionId)
+                await state.closeSession(sessionId)
             }
-            
+
+            sessionServer = createMcpServer()
+
             // 새 Transport 생성
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: (id) => {
-                    state.addTransport(id, transport)
+                    state.addSession(id, { server: sessionServer!, transport })
                     console.info(`✅ [초기화] 새 세션 생성: ${id}`)
                 },
                 // For local development, disable DNS rebinding protection
@@ -122,20 +125,20 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
             })
             transport.onclose = () => {
                 if (transport.sessionId) {
-                    state.removeTransport(transport.sessionId)
+                    state.removeSession(transport.sessionId)
                     console.info(`🔚 [종료] 세션 종료: ${transport.sessionId}`)
                 }
             }
             transport.onerror = (error) => {
                 console.error(`❌ Transport 오류: ${error}`)
                 if (transport.sessionId) {
-                    state.removeTransport(transport.sessionId)
+                    void state.closeSession(transport.sessionId)
                 }
             }
-            await mcpServer.connect(transport)
-        } else if (sessionId && state.getTransport(sessionId)) {
+            await sessionServer.connect(transport)
+        } else if (sessionId && state.getSession(sessionId)) {
             // 기존 세션 사용 (재연결 시도하지 않음)
-            transport = state.getTransport(sessionId)!
+            transport = state.getSession(sessionId)!.transport
             console.info(`📡 [재사용] 기존 세션 사용: ${sessionId}`)
         } else {
             // 세션 ID가 없거나 유효하지 않은 경우
@@ -153,7 +156,9 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
             console.error(`❌ [오류] Transport 처리 실패: ${error}`)
             // 세션 에러 발생 시 세션 정리
             if (sessionId) {
-                state.removeTransport(sessionId)
+                await state.closeSession(sessionId)
+            } else if (sessionServer) {
+                await sessionServer.close()
             }
             res.status(500).json({
                 jsonrpc: '2.0',
@@ -167,17 +172,17 @@ export function createHttpApp(mcpServer: McpServer): express.Application {
     const handleSessionRequest = async (req: express.Request, res: express.Response) => {
         const sessionId = req.headers['mcp-session-id'] as string | undefined
 
-        if (!sessionId || !state.getTransport(sessionId)) {
+        if (!sessionId || !state.getSession(sessionId)) {
             res.status(400).send('Invalid or missing session ID')
             return
         }
-        const transport = state.getTransport(sessionId)!
+        const transport = state.getSession(sessionId)!.transport
         try {
             await transport.handleRequest(req, res)
         } catch (error) {
             console.error(`❌ [오류] 세션 처리 실패 (${sessionId}): ${error}`)
             // 세션 에러 발생 시 세션 정리
-            state.removeTransport(sessionId)
+            await state.closeSession(sessionId)
             res.status(500).send('Internal server error')
         }
     }
@@ -227,8 +232,10 @@ export async function startHttpServer(app: express.Application, onServerStarted?
 /**
  * Stop HTTP server
  */
-export function stopHttpServer(): Promise<void> {
-    return new Promise((resolve) => {
+export async function stopHttpServer(): Promise<void> {
+    await state.closeAllSessions()
+
+    await new Promise<void>((resolve) => {
         if (state.httpServer) {
             state.httpServer.close(() => {
                 console.error('🔚 HTTP Server closed.')

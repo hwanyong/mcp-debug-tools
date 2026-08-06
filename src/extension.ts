@@ -21,12 +21,8 @@ export async function activate(context: vscode.ExtensionContext) {
         // Update status bar to show initializing
         updateStatusBar('initializing')
 
-        // Initialize MCP Server
-        const mcpServer = initializeMcpServer()
-        state.mcpServer = mcpServer
-
         // Create HTTP app
-        const app = createHttpApp(mcpServer)
+        const app = createHttpApp(initializeMcpServer)
 
         // Start HTTP server with callback to update panels
         await startHttpServer(app, async () => {
@@ -92,12 +88,6 @@ export async function deactivate() {
             configManager = undefined
         }
         
-        // Close MCP server
-        if (state.mcpServer) {
-            state.mcpServer.close()
-            console.log('MCP Server deactivated.')
-        }
-
         // Stop HTTP server
         await stopHttpServer()
 

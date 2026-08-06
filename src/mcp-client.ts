@@ -22,10 +22,6 @@ export async function createMcpClient(serverUrl: string): Promise<McpServer> {
     const client = new Client({
         name: 'dap-proxy-client',
         version: '1.0.0'
-    }, {
-        capabilities: {
-            tools: {}
-        }
     })
 
     logInfo('📡 HTTP Transport 연결 시도...')
