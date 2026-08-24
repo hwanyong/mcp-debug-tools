@@ -1,0 +1,42 @@
+# lab.hwanyong.com/mcp-debug-tools/ 로 내보낸다.
+#
+# ★ GitHub Pages 배포는 이 파일이 하지 않는다. 그쪽은 저장소 설정의 legacy 빌드가
+#   main 브랜치의 docs/ 를 직접 훑어 내보내고 있고, 런칭 전까지 그대로 둔다.
+#   즉 같은 내용이 두 곳으로 나가며 이 워크플로는 Cloudflare 쪽만 맡는다.
+#
+# ★ 선행 조건: 저장소 시크릿 CLOUDFLARE_API_TOKEN · CLOUDFLARE_ACCOUNT_ID.
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Worker 의 정적 자산은 루트 기준이라 한 겹 넣어 경로를 맞춘다.
+      - name: Arrange assets under the served path
+        run: |
+          mkdir -p out/mcp-debug-tools
+          cp -R docs/. out/mcp-debug-tools/
+          cp cloudflare/_headers out/_headers
+
+          # Workers 는 자산 한 개가 25 MiB 를 넘으면 배포를 거부한다.
+          # docs/resources/Area_x24.gif 가 86 MiB 라 여기서 걸린다 —
+          # 실측(2026-08-24) docs 안의 어떤 html·md·css 도 그 파일을 참조하지 않는다.
+          # ★ 조용히 빼지 않는다. 빠진 파일을 로그에 남겨, 언젠가 참조가 생기면
+          #   빌드 로그에서 그 사실이 드러나게 한다.
+          echo "--- 25 MiB 초과로 제외되는 자산:"
+          find out -type f -size +25M -print -delete
+
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

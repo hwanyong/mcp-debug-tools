@@ -1,0 +1,24 @@
+# wrangler.toml — Cloudflare Workers 정적 자산 배포.
+#
+# ── 이 저장소만 사정이 다르다 ──────────────────────────────────────────────
+# 여기는 빌드가 없다. GitHub 이 legacy Jekyll 로 docs/ 를 훑어 그대로 내보내고
+# 있었고(저장소에 워크플로가 없다), 그래서 Cloudflare 쪽 워크플로를 새로 둔다.
+#
+# ★ Jekyll 이 docs/ 의 .md 를 .html 로도 변환해 주고 있었지만 재현하지 않는다.
+#   실측(2026-08-24): index.html 이 그 주소를 하나도 링크하지 않고, docs/sitemap.xml
+#   에 실린 URL 은 /mcp-debug-tools/ 하나뿐이다. 즉 아무도 가리키지 않는 자리다.
+#   .md 원본은 그대로 나가므로 내용이 사라지는 것도 아니다.
+#
+# ★ GitHub Pages 설정(main /docs, legacy)은 건드리지 않는다. 런칭 전까지
+#   blog.hwanyong.com/mcp-debug-tools/ 가 지금처럼 살아 있어야 한다.
+name = "mcp-debug-tools"
+compatibility_date = "2026-08-23"
+
+[assets]
+directory = "./out"
+not_found_handling = "404-page"
+html_handling = "auto-trailing-slash"
+
+[[routes]]
+pattern = "lab.hwanyong.com/mcp-debug-tools/*"
+zone_name = "hwanyong.com"

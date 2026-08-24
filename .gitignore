@@ -10,3 +10,6 @@ __hidden*
 
 # MCP Debug Tools 로컬 설정
 .mcp-debug-tools/
+# Cloudflare 배포용 임시 산출물
+out/
+.wrangler/
